@@ -1,0 +1,52 @@
+{
+    "general": {
+        "title": "Beach Volleyball Vidy - Lausanne",
+        "back_to_courts": "Retour aux Terrains",
+        "admin_panel": "Panneau d'Administration"
+    },
+    "index": {
+        "heading": "Beach Volleyball Vidy",
+        "quick_guide": "Guide Rapide",
+        "guide_step1": "Sélectionnez un terrain parmi les options ci-dessous",
+        "guide_step2": "Entrez le nom de votre équipe pour rejoindre la file d'attente de votre terrain préféré",
+        "guide_step3": "Votre équipe sera ajoutée à la file d'attente avec un temps d'attente estimé",
+        "guide_step4": "Quand ce sera votre tour, vous aurez 15 minutes de temps de jeu",
+        "available_courts": "Terrains Disponibles",
+        "currently_playing": "Actuellement en Jeu :",
+        "status": "Statut :",
+        "available": "Disponible",
+        "teams_waiting": "Équipes en Attente :"
+    },
+    "court": {
+        "current_queue": "File d'Attente Actuelle",
+        "shift_queue": "Avancer la File",
+        "playing": "En Jeu",
+        "waiting": "En Attente",
+        "wait": "Attente",
+        "none_playing": "Personne ne joue, rejoignez maintenant !",
+        "enter_team_name": "Entrez le nom de l'équipe",
+        "register_team": "Inscrire l'Équipe",
+        "delete_team": "Supprimer l'Équipe",
+        "delete_confirm": "Êtes-vous sûr de vouloir retirer cette équipe de la file d'attente ?",
+        "delete": "Supprimer",
+        "cancel": "Annuler"
+    },
+    "admin": {
+        "login_title": "Connexion Admin - Gestion des Terrains de Beach Volleyball",
+        "login": "Connexion Admin",
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe",
+        "login_button": "Connexion",
+        "invalid_credentials": "Identifiants invalides",
+        "dashboard": "Tableau de Bord Admin",
+        "court_management": "Gestion des Terrains",
+        "history": "Historique",
+        "logout": "Déconnexion",
+        "confirm": "Confirmer",
+        "restore": "Restaurer"
+    },
+    "language": {
+        "en": "English",
+        "fr": "Français"
+    }
+} 

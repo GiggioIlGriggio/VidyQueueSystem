@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="{{ current_language() }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ get_text('general.title') }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="language-selector">
+        <i class="fas fa-globe"></i>
+        <form action="/set_language" method="post" id="language-form">
+            <input type="hidden" name="redirect_url" value="{{ request.path }}">
+            <select id="language-select" name="lang" onchange="document.getElementById('language-form').submit();">
+                <option value="en" {% if current_language() == 'en' %}selected{% endif %}>{{ get_text('language.en') }}</option>
+                <option value="fr" {% if current_language() == 'fr' %}selected{% endif %}>{{ get_text('language.fr') }}</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="container">
+        <h1><i class="fas fa-volleyball-ball"></i> {{ get_text('index.heading') }}</h1>
+        
+        <div class="tutorial">
+            <div class="tutorial-header">
+                <h2><i class="fas fa-info-circle"></i> {{ get_text('index.quick_guide') }}</h2>
+                <button class="expand-btn" aria-label="Toggle quick guide">
+                    <span class="expand-icon">▼</span>
+                </button>
+            </div>
+            <div class="tutorial-content">
+                <ol>
+                    <li>{{ get_text('index.guide_step1') }}</li>
+                    <li>{{ get_text('index.guide_step2') }}</li>
+                    <li>{{ get_text('index.guide_step3') }}</li>
+                    <li>{{ get_text('index.guide_step4') }}</li>
+                </ol>
+            </div>
+        </div>
+
+        <h2 class="courts-header"><i class="fas fa-map-marker-alt"></i> {{ get_text('index.available_courts') }}</h2>
+        
+        <div class="courts-grid">
+            {% for court in court_data %}
+            <a href="/court/{{ court.id }}?lang={{ current_language() }}" class="court-card-link">
+                <div class="court-card" style="border-color: {{ court.color }}; box-shadow: 0 4px 6px -1px {{ court.color }}44;">
+                    <div class="court-header" style="background-color: {{ court.color }};">
+                        <h3><i class="fas fa-{{ court.icon }}"></i> {{ court.name }}</h3>
+                    </div>
+                    <div class="court-body">
+                        <div class="court-status">
+                            {% if court.currently_playing %}
+                            <p class="playing-status">
+                                <span class="status-label">{{ get_text('index.currently_playing') }}</span>
+                                <span class="status-value">{{ court.currently_playing }}</span>
+                            </p>
+                            {% else %}
+                            <p class="empty-status">
+                                <span class="status-label">{{ get_text('index.status') }}</span>
+                                <span class="status-value">{{ get_text('index.available') }}</span>
+                            </p>
+                            {% endif %}
+
+                            <p class="waiting-status">
+                                <span class="status-label">{{ get_text('index.teams_waiting') }}</span>
+                                <span class="status-value">{{ court.waiting_count }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        <div class="admin-container">
+            <a href="/admin/login?lang={{ current_language() }}" class="admin-link"><i class="fas fa-lock"></i> {{ get_text('general.admin_panel') }}</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const expandBtn = document.querySelector('.expand-btn');
+            const tutorialContent = document.querySelector('.tutorial-content');
+            const expandIcon = document.querySelector('.expand-icon');
+            
+            expandBtn.addEventListener('click', function() {
+                tutorialContent.classList.toggle('expanded');
+                expandIcon.textContent = tutorialContent.classList.contains('expanded') ? '▼' : '▶';
+            });
+        });
+
+        function changeLanguage(lang) {
+            // If the selected language is the same as current, nothing to do
+            if (lang === "{{ current_language() }}") {
+                return;
+            }
+            
+            // Get the current URL
+            const url = new URL(window.location.href);
+            // Set the lang parameter
+            url.searchParams.set('lang', lang);
+            
+            // Instead of just updating the URL, explicitly reload the page
+            window.location.href = url.toString();
+            
+            // Force a full page reload to ensure all content is updated with the new language
+            window.location.reload(true);
+        }
+    </script>
+</body>
+</html> 

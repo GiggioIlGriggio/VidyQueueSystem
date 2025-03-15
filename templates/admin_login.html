@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="{{ current_language() }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ get_text('admin.login_title') }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="language-selector">
+        <i class="fas fa-globe"></i>
+        <form action="/set_language" method="post" id="language-form">
+            <input type="hidden" name="redirect_url" value="{{ request.path }}">
+            <select id="language-select" name="lang" onchange="document.getElementById('language-form').submit();">
+                <option value="en" {% if current_language() == 'en' %}selected{% endif %}>{{ get_text('language.en') }}</option>
+                <option value="fr" {% if current_language() == 'fr' %}selected{% endif %}>{{ get_text('language.fr') }}</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="container">
+        <h1>{{ get_text('admin.login') }}</h1>
+        
+        {% if error %}
+        <div class="error-message">
+            {{ error }}
+        </div>
+        {% endif %}
+        
+        <form action="/admin/login" method="post">
+            <input type="hidden" name="lang" value="{{ current_language() }}">
+            <label for="username">{{ get_text('admin.username') }}</label>
+            <input type="text" id="username" name="username" required>
+            
+            <label for="password">{{ get_text('admin.password') }}</label>
+            <input type="password" id="password" name="password" required>
+            
+            <button type="submit">{{ get_text('admin.login_button') }}</button>
+        </form>
+        
+        <div class="actions">
+            <a href="/?lang={{ current_language() }}">{{ get_text('general.back_to_courts') }}</a>
+        </div>
+    </div>
+
+    <script>
+        function changeLanguage(lang) {
+            // If the selected language is the same as current, nothing to do
+            if (lang === "{{ current_language() }}") {
+                return;
+            }
+            
+            // Get the current URL
+            const url = new URL(window.location.href);
+            // Set the lang parameter
+            url.searchParams.set('lang', lang);
+            
+            // Instead of just updating the URL, explicitly reload the page
+            window.location.href = url.toString();
+            
+            // Force a full page reload to ensure all content is updated with the new language
+            window.location.reload(true);
+        }
+    </script>
+</body>
+</html> 

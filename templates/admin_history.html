@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="{{ current_language() }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ court_name }} {{ get_text('admin.history') }} - {{ get_text('general.title') }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --court-color: {{ court_color }};
+            --court-color-alpha: {{ court_color }}AA;
+            --court-color-darker: {{ court_color }}DD;
+        }
+        .court-specific-header {
+            background: linear-gradient(135deg, var(--court-color) 0%, var(--court-color-alpha) 100%);
+        }
+        .restore-btn {
+            background-color: var(--court-color);
+        }
+        .restore-btn:hover {
+            background-color: var(--court-color-darker);
+        }
+        .history-item {
+            border-left: 4px solid var(--court-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="language-selector">
+        <i class="fas fa-globe"></i>
+        <form action="/set_language" method="post" id="language-form">
+            <input type="hidden" name="redirect_url" value="{{ request.path }}">
+            <select id="language-select" name="lang" onchange="document.getElementById('language-form').submit();">
+                <option value="en" {% if current_language() == 'en' %}selected{% endif %}>{{ get_text('language.en') }}</option>
+                <option value="fr" {% if current_language() == 'fr' %}selected{% endif %}>{{ get_text('language.fr') }}</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="container">
+        <h1 class="court-specific-header">{{ court_name }} - {{ get_text('admin.history') }}</h1>
+        
+        <div class="admin-header">
+            <a href="/admin/dashboard?lang={{ current_language() }}" class="admin-nav-btn">{{ get_text('admin.dashboard') }}</a>
+            <a href="/court/{{ court_id }}?lang={{ current_language() }}" class="admin-nav-btn">{{ get_text('general.back_to_courts') }}</a>
+            <a href="/admin/logout?lang={{ current_language() }}" class="admin-nav-btn">{{ get_text('admin.logout') }}</a>
+        </div>
+
+        <div class="history-list">
+            {% for state in history|reverse %}
+            <div class="history-item">
+                <div class="history-info">
+                    <span class="history-timestamp">{{ state.timestamp }}</span>
+                    <span class="history-action">{{ state.action }}</span>
+                </div>
+                <div class="history-queue">
+                    {% for team in state.queue %}
+                    <div class="history-team">
+                        <span class="team-name">{{ team.name }}</span>
+                        <span class="team-status">{{ get_text('court.playing') if loop.index == 1 else get_text('court.waiting') }}</span>
+                        <span class="team-time">{{ (team.time // 60)|int }}:{{ '%02d' % (team.time % 60) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="restore-btn" onclick="restoreQueue({{ loop.index0 }})">{{ get_text('admin.restore') }}</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="confirm-dialog" class="modal">
+        <div class="modal-content">
+            <h2>{{ get_text('admin.confirm') }}</h2>
+            <p>{{ get_text('court.delete_confirm') }}</p>
+            <div class="modal-buttons">
+                <button onclick="confirmRestore()" class="confirm-btn">{{ get_text('admin.confirm') }}</button>
+                <button onclick="closeDialog()" class="cancel-btn">{{ get_text('court.cancel') }}</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let restoreIndex = null;
+
+        function restoreQueue(index) {
+            restoreIndex = index;
+            document.getElementById('confirm-dialog').style.display = 'flex';
+        }
+
+        function closeDialog() {
+            document.getElementById('confirm-dialog').style.display = 'none';
+            restoreIndex = null;
+        }
+
+        function confirmRestore() {
+            if (restoreIndex === null) return;
+            
+            // Get the current language
+            const currentLang = "{{ current_language() }}";
+
+            fetch(`/admin/restore/{{ court_id }}/${restoreIndex}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/court/{{ court_id }}?lang=${currentLang}`;
+                } else {
+                    alert('Failed to restore queue state');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to restore queue state');
+            })
+            .finally(() => {
+                closeDialog();
+            });
+        }
+
+        // Close dialog when clicking outside
+        window.onclick = function(event) {
+            const dialog = document.getElementById('confirm-dialog');
+            if (event.target === dialog) {
+                closeDialog();
+            }
+        }
+    </script>
+</body>
+</html> 

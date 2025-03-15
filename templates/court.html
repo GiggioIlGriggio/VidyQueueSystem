@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="{{ current_language() }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ court_name }} - {{ get_text('general.title') }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --court-color: {{ court_color }};
+            --court-color-darker: {{ court_color }}DD;
+        }
+        .court-specific {
+            border-color: var(--court-color);
+        }
+        .court-specific-header {
+            background-color: var(--court-color);
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, var(--court-color) 0%, var(--court-color-darker) 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="language-selector">
+        <i class="fas fa-globe"></i>
+        <form action="/set_language" method="post" id="language-form">
+            <input type="hidden" name="redirect_url" value="{{ request.path }}">
+            <select id="language-select" name="lang" onchange="document.getElementById('language-form').submit();">
+                <option value="en" {% if current_language() == 'en' %}selected{% endif %}>{{ get_text('language.en') }}</option>
+                <option value="fr" {% if current_language() == 'fr' %}selected{% endif %}>{{ get_text('language.fr') }}</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="container">
+        <h1 class="court-specific-header">
+            <i class="fas fa-{{ court_icon }}"></i> {{ court_name }}
+        </h1>
+        
+        <div class="court-actions-top">
+            <a href="/?lang={{ current_language() }}" class="back-btn"><i class="fas fa-arrow-left"></i> {{ get_text('general.back_to_courts') }}</a>
+        </div>
+        
+        <div class="queue-header court-specific">
+            <h2 class="court-specific-header"><i class="fas fa-list-ol"></i> {{ get_text('court.current_queue') }}</h2>
+            <div class="queue-actions">
+                <form action="/shift_queue/{{ court_id }}" method="post">
+                    <input type="hidden" name="lang" value="{{ current_language() }}">
+                    <button type="submit" class="shift-queue-btn"><i class="fas fa-forward"></i> {{ get_text('court.shift_queue') }}</button>
+                </form>
+            </div>
+        </div>
+        
+        <ul class="court-specific-list">
+            {% if queue_data %}
+                {% for team in queue_data %}
+                <li class="court-specific">
+                    <div class="team-info">
+                        <span class="team-name"><i class="fas fa-users"></i> {{ team['name'] }}</span>
+                        <span class="team-status">{{ get_text('court.playing') if loop.index == 1 else get_text('court.waiting') }}</span>
+                        <span class="team-time"><i class="fas fa-clock"></i> {{ team['time_str'] }}</span>
+                        <span class="team-wait"><i class="fas fa-hourglass-half"></i> {{ get_text('court.wait') }}: {{ team['wait_str'] }}</span>
+                        <button class="delete-btn" aria-label="Delete team"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: {% if loop.index == 1 %}{{ (team['time'] / court.MATCH_DURATION * 100)|int }}{% else %}0{% endif %}%"></div>
+                    </div>
+                </li>
+                {% endfor %}
+            {% else %}
+                <li class="empty-queue court-specific">
+                    <p><i class="fas fa-umbrella-beach"></i> {{ get_text('court.none_playing') }}</p>
+                </li>
+            {% endif %}
+            <li class="register-team court-specific">
+                <form action="/register/{{ court_id }}" method="post" class="register-form">
+                    <input type="hidden" name="lang" value="{{ current_language() }}">
+                    <input type="text" name="team-name" placeholder="{{ get_text('court.enter_team_name') }}" required>
+                    <button type="submit"><i class="fas fa-user-plus"></i> {{ get_text('court.register_team') }}</button>
+                </form>
+            </li>
+        </ul>
+
+        <div class="admin-container">
+            <a href="/admin/login?lang={{ current_language() }}" class="admin-link"><i class="fas fa-lock"></i> {{ get_text('general.admin_panel') }}</a>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="delete-modal" id="deleteModal">
+        <div class="delete-modal-content">
+            <h3><i class="fas fa-exclamation-triangle"></i> {{ get_text('court.delete_team') }}</h3>
+            <p>{{ get_text('court.delete_confirm') }}</p>
+            <div class="delete-modal-buttons">
+                <button class="delete-confirm-btn"><i class="fas fa-trash"></i> {{ get_text('court.delete') }}</button>
+                <button class="delete-cancel-btn"><i class="fas fa-times"></i> {{ get_text('court.cancel') }}</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Delete team functionality
+            const deleteModal = document.getElementById('deleteModal');
+            const deleteConfirmBtn = deleteModal.querySelector('.delete-confirm-btn');
+            const deleteCancelBtn = deleteModal.querySelector('.delete-cancel-btn');
+            let teamToDelete = null;
+
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.delete-btn')) {
+                    const listItem = e.target.closest('li');
+                    const teamIndex = Array.from(listItem.parentElement.children)
+                        .filter(item => !item.classList.contains('register-team'))
+                        .indexOf(listItem);
+                    teamToDelete = teamIndex;
+                    deleteModal.style.display = 'flex';
+                }
+            });
+
+            deleteConfirmBtn.addEventListener('click', function() {
+                if (teamToDelete !== null) {
+                    // Get the current language
+                    const url = new URL(window.location.href);
+                    const lang = url.searchParams.get('lang');
+                    
+                    // Add language parameter to the fetch URL if it exists
+                    let fetchUrl = `/delete_team/{{ court_id }}/${teamToDelete}`;
+                    if (lang) {
+                        fetchUrl += `?lang=${lang}`;
+                    }
+                    
+                    fetch(fetchUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove the team from queueData
+                            queueData.splice(teamToDelete, 1);
+                            updateQueueList();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting team:', error);
+                    })
+                    .finally(() => {
+                        deleteModal.style.display = 'none';
+                        teamToDelete = null;
+                    });
+                }
+            });
+
+            deleteCancelBtn.addEventListener('click', function() {
+                deleteModal.style.display = 'none';
+                teamToDelete = null;
+            });
+
+            // Close modal when clicking outside
+            deleteModal.addEventListener('click', function(e) {
+                if (e.target === deleteModal) {
+                    deleteModal.style.display = 'none';
+                    teamToDelete = null;
+                }
+            });
+        });
+
+        const queueData = {{ queue_data|tojson }};
+        const MATCH_DURATION = 900; // 15 minutes in seconds
+        let isAnimating = false;
+        let localTimer = null;
+        
+        // Store translations for use in JavaScript
+        const translations = {{ translations_js|tojson }};
+        
+        function updateQueueTimes() {
+            const queueList = document.querySelector('ul');
+            if (queueData.length > 0) {
+                // Only update the playing team's time
+                queueData[0].time -= 1;
+                
+                const listItem = queueList.children[0];
+                if (listItem && !listItem.classList.contains('register-team')) {
+                    const minutes = Math.floor(queueData[0].time / 60);
+                    const seconds = queueData[0].time % 60;
+                    const timeSpan = listItem.querySelector('.team-time');
+                    const progressBar = listItem.querySelector('.progress-bar');
+                    
+                    if (timeSpan) {
+                        timeSpan.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                    
+                    if (progressBar) {
+                        const percentage = (queueData[0].time / MATCH_DURATION) * 100;
+                        progressBar.style.width = `${Math.max(0, percentage)}%`;
+                    }
+
+                    // Update wait times for all teams by calculating locally
+                    for (let i = 1; i < queueData.length; i++) {
+                        // Update estimated wait time based on current playing team's time
+                        queueData[i].estimated_wait = queueData[0].time + (i - 1) * MATCH_DURATION;
+                        
+                        const waitListItem = queueList.children[i];
+                        if (waitListItem && !waitListItem.classList.contains('register-team')) {
+                            const waitSpan = waitListItem.querySelector('.team-wait');
+                            if (waitSpan) {
+                                const waitMinutes = Math.floor(queueData[i].estimated_wait / 60);
+                                const waitSeconds = queueData[i].estimated_wait % 60;
+                                waitSpan.textContent = `${translations.wait}: ${waitMinutes}:${waitSeconds.toString().padStart(2, '0')}`;
+                            }
+                        }
+                    }
+
+                    if (queueData[0].time <= 0 && !isAnimating) {
+                        isAnimating = true;
+                        listItem.classList.add('shift-out');
+                        setTimeout(() => {
+                            queueData.shift();
+                            updateQueueList();
+                            isAnimating = false;
+                        }, 500);
+                    }
+                }
+            }
+        }
+
+        function updateQueueList() {
+            const queueList = document.querySelector('ul');
+            const registerTeamItem = queueList.querySelector('.register-team');
+            
+            // Remove all items except the register team form
+            while (queueList.children.length > 1) {
+                const itemToRemove = queueList.children[0];
+                if (itemToRemove !== registerTeamItem) {
+                    queueList.removeChild(itemToRemove);
+                }
+            }
+
+            // If queue is empty, add the empty queue message
+            if (queueData.length === 0) {
+                const emptyQueueItem = document.createElement('li');
+                emptyQueueItem.className = 'empty-queue court-specific';
+                emptyQueueItem.innerHTML = `<p><i class="fas fa-umbrella-beach"></i> ${translations.none_playing}</p>`;
+                queueList.insertBefore(emptyQueueItem, registerTeamItem);
+                return;
+            }
+
+            // Update or add items
+            queueData.forEach((team, index) => {
+                let listItem = queueList.children[index];
+                const isPlaying = index === 0;
+                const percentage = isPlaying ? (team.time / MATCH_DURATION) * 100 : 0;
+
+                if (!listItem || listItem === registerTeamItem) {
+                    listItem = document.createElement('li');
+                    listItem.className = 'court-specific';
+                    // Only add animation class if this is a new team (not from server sync)
+                    if (queueData.length > 1 && index === queueData.length - 1) {
+                        listItem.classList.add('new-team');
+                    }
+                    listItem.innerHTML = `
+                        <div class="team-info">
+                            <span class="team-name"><i class="fas fa-users"></i> ${team.name}</span>
+                            <span class="team-status">${isPlaying ? translations.playing : translations.waiting}</span>
+                            <span class="team-time"><i class="fas fa-clock"></i> ${isPlaying ? `${Math.floor(team.time / 60)}:${(team.time % 60).toString().padStart(2, '0')}` : '--:--'}</span>
+                            <span class="team-wait"><i class="fas fa-hourglass-half"></i> ${translations.wait}: ${Math.floor(team.estimated_wait / 60)}:${(team.estimated_wait % 60).toString().padStart(2, '0')}</span>
+                            <button class="delete-btn" aria-label="Delete team"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${percentage}%"></div>
+                        </div>
+                    `;
+                    if (registerTeamItem) {
+                        queueList.insertBefore(listItem, registerTeamItem);
+                    } else {
+                        queueList.appendChild(listItem);
+                    }
+                } else {
+                    const timeSpan = listItem.querySelector('.team-time');
+                    const progressBar = listItem.querySelector('.progress-bar');
+                    const statusSpan = listItem.querySelector('.team-status');
+                    const waitSpan = listItem.querySelector('.team-wait');
+                    
+                    if (timeSpan) {
+                        timeSpan.textContent = isPlaying ? 
+                            `${Math.floor(team.time / 60)}:${(team.time % 60).toString().padStart(2, '0')}` : 
+                            '--:--';
+                    }
+                    if (progressBar) {
+                        progressBar.style.width = `${percentage}%`;
+                    }
+                    if (statusSpan) {
+                        statusSpan.textContent = isPlaying ? translations.playing : translations.waiting;
+                    }
+                    if (waitSpan) {
+                        waitSpan.textContent = `${translations.wait}: ${Math.floor(team.estimated_wait / 60)}:${(team.estimated_wait % 60).toString().padStart(2, '0')}`;
+                    }
+                }
+            });
+        }
+
+        // Fetch updated queue data from server every 10 seconds to ensure synchronization
+        function fetchQueueData() {
+            // Get the current URL to extract the language parameter
+            const url = new URL(window.location.href);
+            const currentLang = url.searchParams.get('lang');
+            
+            // Get the session language from the HTML lang attribute
+            const htmlLang = document.documentElement.lang;
+            
+            // If URL language param doesn't match the current HTML language,
+            // reload the page to ensure proper language display
+            if (currentLang && htmlLang && currentLang !== htmlLang) {
+                window.location.reload(true);
+                return;
+            }
+            
+            // Include the language parameter in the fetch URL if it exists
+            let fetchUrl = '/queue_data/{{ court_id }}';
+            if (currentLang) {
+                fetchUrl += '?lang=' + currentLang;
+            }
+            
+            fetch(fetchUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // Check if the page language needs to be updated
+                    const responseLang = data.current_language;
+                    
+                    // If the server language is different from current page language, reload
+                    if (responseLang && htmlLang !== responseLang) {
+                        window.location.reload(true);
+                        return;
+                    }
+                    
+                    // Update translations if provided in the response
+                    if (data.translations) {
+                        Object.assign(translations, data.translations);
+                    }
+                    
+                    // Get the queue data from the response
+                    const fetchedQueue = data.queue || [];
+                    
+                    // If we have local data and there's a first team playing, preserve its current time
+                    // to avoid jumps in the timer caused by network delay
+                    if (queueData.length > 0 && fetchedQueue.length > 0 && 
+                        queueData[0].name === fetchedQueue[0].name) {
+                        const currentTime = queueData[0].time;
+                        fetchedQueue[0].time = currentTime;
+                    }
+                    
+                    // Update our local queue data
+                    queueData.length = 0;
+                    fetchedQueue.forEach(item => queueData.push(item));
+                    
+                    // Update the UI
+                    updateQueueList();
+                })
+                .catch(error => {
+                    console.error('Error fetching queue data:', error);
+                });
+        }
+
+        // Start the timer to update times every second
+        localTimer = setInterval(updateQueueTimes, 1000);
+        
+        // Fetch fresh data from server every 10 seconds
+        setInterval(fetchQueueData, 10000);
+        
+        // Initial fetch to start with updated data
+        fetchQueueData();
+    });
+
+    function changeLanguage(lang) {
+        // If the selected language is the same as current, nothing to do
+        if (lang === "{{ current_language() }}") {
+            return;
+        }
+        
+        // Get the current URL
+        const url = new URL(window.location.href);
+        // Set the lang parameter
+        url.searchParams.set('lang', lang);
+        
+        // Instead of just updating the URL, explicitly reload the page
+        window.location.href = url.toString();
+        
+        // Force a full page reload to ensure all content is updated with the new language
+        window.location.reload(true);
+    }
+    </script>
+</body>
+</html> 

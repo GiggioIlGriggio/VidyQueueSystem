@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="{{ current_language() }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ get_text('admin.dashboard') }} - {{ get_text('general.title') }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="language-selector">
+        <i class="fas fa-globe"></i>
+        <form action="/set_language" method="post" id="language-form">
+            <input type="hidden" name="redirect_url" value="{{ request.path }}">
+            <select id="language-select" name="lang" onchange="document.getElementById('language-form').submit();">
+                <option value="en" {% if current_language() == 'en' %}selected{% endif %}>{{ get_text('language.en') }}</option>
+                <option value="fr" {% if current_language() == 'fr' %}selected{% endif %}>{{ get_text('language.fr') }}</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="container">
+        <h1>{{ get_text('admin.dashboard') }}</h1>
+        
+        <div class="admin-header">
+            <a href="/?lang={{ current_language() }}" class="admin-nav-btn">{{ get_text('general.back_to_courts') }}</a>
+            <a href="/admin/logout?lang={{ current_language() }}" class="admin-nav-btn">{{ get_text('admin.logout') }}</a>
+        </div>
+
+        <div class="courts-grid admin-courts">
+            {% for court in court_data %}
+            <div class="court-admin-card" style="border-color: {{ court.color }}">
+                <div class="court-admin-header" style="background-color: {{ court.color }}">
+                    <h3><i class="fas fa-{{ court.icon }}"></i> {{ court.name }}</h3>
+                </div>
+                <div class="court-admin-body">
+                    <div class="court-queue-summary">
+                        <h4>{{ get_text('court.current_queue') }} ({{ court.queue|length }} teams)</h4>
+                        {% if court.queue %}
+                            <div class="currently-playing">
+                                <span class="label">{{ get_text('court.playing') }}:</span>
+                                <span class="value">{{ court.queue[0].name }}</span>
+                                <span class="time">{{ (court.queue[0].time // 60)|int }}:{{ '%02d' % (court.queue[0].time % 60) }}</span>
+                            </div>
+                            {% if court.queue|length > 1 %}
+                                <div class="waiting-teams">
+                                    <span class="label">{{ get_text('court.waiting') }}:</span>
+                                    <div class="teams-list">
+                                        {% for team in court.queue[1:] %}
+                                            <div class="waiting-team">
+                                                {{ team.name }}
+                                                <span class="team-wait-time">
+                                                    ({{ get_text('court.wait') }}: {{ (team.estimated_wait // 60)|int }}:{{ '%02d' % (team.estimated_wait % 60) }})
+                                                </span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="no-waiting">{{ get_text('index.teams_waiting') }} 0</div>
+                            {% endif %}
+                        {% else %}
+                            <div class="no-teams">{{ get_text('court.none_playing') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="court-admin-actions">
+                        <a href="/court/{{ court.id }}?lang={{ current_language() }}" class="admin-view-btn">
+                            <i class="fas fa-eye"></i> {{ get_text('general.back_to_courts') }}
+                        </a>
+                        <a href="/admin/history/{{ court.id }}?lang={{ current_language() }}" class="admin-history-btn">
+                            <i class="fas fa-history"></i> {{ get_text('admin.history') }}
+                        </a>
+                        {% if court.queue %}
+                        <form action="/shift_queue/{{ court.id }}" method="post">
+                            <input type="hidden" name="lang" value="{{ current_language() }}">
+                            <button type="submit" class="admin-shift-btn">
+                                <i class="fas fa-forward"></i> {{ get_text('court.shift_queue') }}
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function changeLanguage(lang) {
+            // If the selected language is the same as current, nothing to do
+            if (lang === "{{ current_language() }}") {
+                return;
+            }
+            
+            // Get the current URL
+            const url = new URL(window.location.href);
+            // Set the lang parameter
+            url.searchParams.set('lang', lang);
+            
+            // Instead of just updating the URL, explicitly reload the page
+            window.location.href = url.toString();
+            
+            // Force a full page reload to ensure all content is updated with the new language
+            window.location.reload(true);
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,172 @@
+[
+  {
+    "court_id": 0,
+    "court_name": "Court 1",
+    "queue": [],
+    "history": [],
+    "match_duration": 900
+  },
+  {
+    "court_id": 1,
+    "court_name": "Court 2",
+    "queue": [
+      {
+        "name": "ole",
+        "time": 160,
+        "estimated_wait": 0
+      }
+    ],
+    "history": [
+      {
+        "timestamp": "2025-03-15T12:16:00.869022",
+        "queue": [
+          {
+            "name": "prova team 1",
+            "time": 385,
+            "estimated_wait": 0
+          }
+        ],
+        "action": "Added team: prova team 1"
+      },
+      {
+        "timestamp": "2025-03-15T12:16:04.079545",
+        "queue": [
+          {
+            "name": "prova team 1",
+            "time": 385,
+            "estimated_wait": 0
+          },
+          {
+            "name": "prova team 2",
+            "time": 0,
+            "estimated_wait": 889
+          }
+        ],
+        "action": "Added team: prova team 2"
+      },
+      {
+        "timestamp": "2025-03-15T12:16:08.031701",
+        "queue": [
+          {
+            "name": "prova team 1",
+            "time": 385,
+            "estimated_wait": 0
+          },
+          {
+            "name": "prova team 2",
+            "time": 0,
+            "estimated_wait": 889
+          },
+          {
+            "name": "prova team 3",
+            "time": 0,
+            "estimated_wait": 385
+          }
+        ],
+        "action": "Added team: prova team 3"
+      },
+      {
+        "timestamp": "2025-03-15T12:16:11.907058",
+        "queue": [
+          {
+            "name": "prova team 1",
+            "time": 385,
+            "estimated_wait": 0
+          },
+          {
+            "name": "prova team 3",
+            "time": 0,
+            "estimated_wait": 385
+          }
+        ],
+        "action": "Deleted team: prova team 2"
+      },
+      {
+        "timestamp": "2025-03-15T12:34:10.614348",
+        "queue": [
+          {
+            "name": "prova team 3",
+            "time": 0,
+            "estimated_wait": 0
+          }
+        ],
+        "action": "Shifted queue - Removed team: prova team 1"
+      },
+      {
+        "timestamp": "2025-03-15T12:49:11.018308",
+        "queue": [],
+        "action": "Shifted queue - Removed team: prova team 3"
+      },
+      {
+        "timestamp": "2025-03-15T13:24:12.361613",
+        "queue": [
+          {
+            "name": "siumm",
+            "time": 0,
+            "estimated_wait": 0
+          }
+        ],
+        "action": "Added team: siumm"
+      },
+      {
+        "timestamp": "2025-03-15T13:27:55.297373",
+        "queue": [
+          {
+            "name": "siumm",
+            "time": 0,
+            "estimated_wait": 0
+          },
+          {
+            "name": "ole",
+            "time": 609,
+            "estimated_wait": 0
+          }
+        ],
+        "action": "Added team: ole"
+      },
+      {
+        "timestamp": "2025-03-15T13:39:12.442085",
+        "queue": [
+          {
+            "name": "ole",
+            "time": 609,
+            "estimated_wait": 0
+          }
+        ],
+        "action": "Shifted queue - Removed team: siumm"
+      }
+    ],
+    "match_duration": 900
+  },
+  {
+    "court_id": 2,
+    "court_name": "Court 3",
+    "queue": [],
+    "history": [],
+    "match_duration": 900
+  },
+  {
+    "court_id": 3,
+    "court_name": "Court 4",
+    "queue": [],
+    "history": [
+      {
+        "timestamp": "2025-03-15T13:26:50.714511",
+        "queue": [
+          {
+            "name": "kuygfv",
+            "time": 0,
+            "estimated_wait": 0
+          }
+        ],
+        "action": "Added team: kuygfv"
+      },
+      {
+        "timestamp": "2025-03-15T13:41:50.489764",
+        "queue": [],
+        "action": "Shifted queue - Removed team: kuygfv"
+      }
+    ],
+    "match_duration": 900
+  }
+]

@@ -1,0 +1,52 @@
+{
+    "general": {
+        "title": "Beach Volleyball Vidy - Lausanne",
+        "back_to_courts": "Back to Courts",
+        "admin_panel": "Admin Panel"
+    },
+    "index": {
+        "heading": "Beach Volleyball Vidy",
+        "quick_guide": "Quick Guide",
+        "guide_step1": "Select a court from the options below",
+        "guide_step2": "Enter your team name to join the queue for your preferred court",
+        "guide_step3": "Your team will be added to the queue with an estimated wait time",
+        "guide_step4": "When it's your turn, you'll have 15 minutes of court time",
+        "available_courts": "Available Courts",
+        "currently_playing": "Currently Playing:",
+        "status": "Status:",
+        "available": "Available",
+        "teams_waiting": "Teams Waiting:"
+    },
+    "court": {
+        "current_queue": "Current Queue",
+        "shift_queue": "Shift Queue",
+        "playing": "Playing",
+        "waiting": "Waiting",
+        "wait": "Wait",
+        "none_playing": "None is playing, join now!",
+        "enter_team_name": "Enter team name",
+        "register_team": "Register Team",
+        "delete_team": "Delete Team",
+        "delete_confirm": "Are you sure you want to remove this team from the queue?",
+        "delete": "Delete",
+        "cancel": "Cancel"
+    },
+    "admin": {
+        "login_title": "Admin Login - Beach Volleyball Court Management",
+        "login": "Admin Login",
+        "username": "Username",
+        "password": "Password",
+        "login_button": "Login",
+        "invalid_credentials": "Invalid credentials",
+        "dashboard": "Admin Dashboard",
+        "court_management": "Court Management",
+        "history": "History",
+        "logout": "Logout",
+        "confirm": "Confirm",
+        "restore": "Restore"
+    },
+    "language": {
+        "en": "English",
+        "fr": "Français"
+    }
+} 
