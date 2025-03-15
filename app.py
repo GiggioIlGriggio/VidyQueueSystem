@@ -6,7 +6,7 @@ from datetime import datetime
 import os
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Generate a random secret key for session management
+app.secret_key = os.environ.get('SECRET_KEY', 'your-default-secret-key')  # More persistent secret key
 
 # Data storage configuration
 DATA_FOLDER = 'data'
