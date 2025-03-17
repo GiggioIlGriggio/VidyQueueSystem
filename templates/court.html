@@ -62,7 +62,9 @@
                         <span class="team-name"><i class="fas fa-users"></i> {{ team['name'] }}</span>
                         <span class="team-status">{{ get_text('court.playing') if loop.index == 1 else get_text('court.waiting') }}</span>
                         <span class="team-time"><i class="fas fa-clock"></i> {{ team['time_str'] }}</span>
+                        {% if loop.index > 1 %}
                         <span class="team-wait"><i class="fas fa-hourglass-half"></i> {{ get_text('court.wait') }}: {{ team['wait_str'] }}</span>
+                        {% endif %}
                         <button class="delete-btn" aria-label="Delete team"><i class="fas fa-times"></i></button>
                     </div>
                     <div class="progress-container">
@@ -179,6 +181,27 @@
             // Store translations for use in JavaScript
             const translations = {{ translations_js|tojson }};
             
+            // Function to clean up expired teams from the queue
+            function cleanupExpiredTeams() {
+                const currentTime = Date.now() / 1000;
+                while (queueData.length > 0) {
+                    const team = queueData[0];
+                    if (team.start_timestamp) {
+                        const elapsed = currentTime - team.start_timestamp;
+                        if (elapsed >= MATCH_DURATION) {
+                            queueData.shift();
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+            
+            // Initial cleanup of expired teams
+            cleanupExpiredTeams();
+            
             function updateQueueTimes() {
                 const queueList = document.querySelector('ul');
                 if (queueData.length > 0) {
@@ -194,6 +217,13 @@
                         // Current elapsed time is the original elapsed time plus time spent on the page
                         const totalElapsed = (serverTimeAtLoad - currentTeam.start_timestamp) + clientElapsed;
                         currentTeam.time = Math.max(0, Math.floor(MATCH_DURATION - totalElapsed));
+                        
+                        // If the team has expired, remove it immediately
+                        if (totalElapsed >= MATCH_DURATION) {
+                            queueData.shift();
+                            updateQueueList();
+                            return;
+                        }
                     } else {
                         // Fallback to simple decrement for backward compatibility
                         currentTeam.time -= 1;
@@ -283,7 +313,7 @@
                                 <span class="team-name"><i class="fas fa-users"></i> ${team.name}</span>
                                 <span class="team-status">${isPlaying ? translations.playing : translations.waiting}</span>
                                 <span class="team-time"><i class="fas fa-clock"></i> ${isPlaying ? `${Math.floor(team.time / 60)}:${(team.time % 60).toString().padStart(2, '0')}` : '--:--'}</span>
-                                <span class="team-wait"><i class="fas fa-hourglass-half"></i> ${translations.wait}: ${Math.floor(team.estimated_wait / 60)}:${(team.estimated_wait % 60).toString().padStart(2, '0')}</span>
+                                ${!isPlaying ? `<span class="team-wait"><i class="fas fa-hourglass-half"></i> ${translations.wait}: ${Math.floor(team.estimated_wait / 60)}:${(team.estimated_wait % 60).toString().padStart(2, '0')}</span>` : ''}
                                 <button class="delete-btn" aria-label="Delete team"><i class="fas fa-times"></i></button>
                             </div>
                             <div class="progress-container">
@@ -361,22 +391,30 @@
                         // Get the queue data from the response
                         const fetchedQueue = data.queue || [];
                         
+                        // Clean up expired teams from fetched data
+                        const currentTime = Date.now() / 1000;
+                        const validQueue = fetchedQueue.filter(team => {
+                            if (!team.start_timestamp) return true;
+                            const elapsed = currentTime - team.start_timestamp;
+                            return elapsed < MATCH_DURATION;
+                        });
+                        
                         // If we have a team playing with timestamp data, update our timing info
-                        if (fetchedQueue.length > 0 && fetchedQueue[0].start_timestamp) {
+                        if (validQueue.length > 0 && validQueue[0].start_timestamp) {
                             // Keep track of when we received this data for time calculations
                             clientStartTime = Date.now() / 1000;
                             
                             // If the same team is still playing, keep using our locally calculated time
                             // to avoid jumps due to network delays
-                            if (queueData.length > 0 && queueData[0].name === fetchedQueue[0].name) {
+                            if (queueData.length > 0 && queueData[0].name === validQueue[0].name) {
                                 const currentTime = queueData[0].time;
-                                fetchedQueue[0].time = currentTime;
+                                validQueue[0].time = currentTime;
                             }
                         }
                         
-                        // Update our local queue data
+                        // Update our local queue data with cleaned up data
                         queueData.length = 0;
-                        fetchedQueue.forEach(item => queueData.push(item));
+                        validQueue.forEach(item => queueData.push(item));
                         
                         // Update the UI
                         updateQueueList();

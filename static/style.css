@@ -113,7 +113,7 @@ p {
     box-shadow: var(--shadow);
 }
 
-a {
+a:not(.court-card-link) {
     color: var(--primary-color);
     text-decoration: none;
     font-weight: 500;
@@ -126,7 +126,7 @@ a {
     margin: 0.5rem;
 }
 
-a:hover {
+a:not(.court-card-link):hover {
     color: var(--primary-dark);
     transform: translateY(-2px);
     box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1);
@@ -466,13 +466,13 @@ li {
 }
 
 .tutorial {
-    background-color: var(--white);
+    background-color: white;
     padding: 1.5rem;
     border-radius: 1rem;
     box-shadow: var(--shadow);
     margin: 2rem auto;
     max-width: 600px;
-    border: 2px solid var(--beach-sand);
+    border: 2px solid #ddd;
 }
 
 .tutorial-header {
@@ -483,11 +483,14 @@ li {
 }
 
 .tutorial-header h2 {
-    color: var(--text-primary);
-    background-color: var(--primary-bg);
+    color: black;
+    background-color: white;
+    background: white;
+    background-image: none;
     margin: 0;
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
+    box-shadow: none;
 }
 
 .expand-btn {
@@ -495,7 +498,7 @@ li {
     border: none;
     padding: 0.5rem;
     cursor: pointer;
-    color: var(--primary-color);
+    color: black;
     font-size: 1.2rem;
     transition: transform 0.3s ease;
     width: auto;
@@ -524,11 +527,10 @@ li {
 }
 
 .tutorial li {
-    color: var(--text-primary);
+    color: black;
     background: none;
     box-shadow: none;
     padding: 0.5rem 0;
-    font-size: 1rem;
 }
 
 .empty-queue {
@@ -903,18 +905,16 @@ li:hover .delete-btn {
     background-color: var(--white);
     border-radius: 1rem;
     overflow: hidden;
-    box-shadow: var(--shadow);
     border: 3px solid;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease;
     min-width: 0; /* Helps with text overflow in grid items */
-    /* Fixed dimensions for consistent sizing */
-    height: 220px;
-    width: 100%;
-}
-
-.court-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    /* Larger dimensions to fill more space */
+    height: 250px;
+    width: 100%; 
+    max-width: 350px; /* Increased from 280px */
+    margin: 0 auto; /* Center the card in its grid cell */
+    box-shadow: none !important; /* Explicitly remove any shadow */
+    cursor: pointer;
 }
 
 .court-header {
@@ -955,22 +955,23 @@ li:hover .delete-btn {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem; /* Increased padding */
     border-radius: 0.5rem;
-    font-size: 0.9rem;
-    background-color: var(--primary-bg);
+    font-size: 1rem; /* Slightly larger font */
+    margin-bottom: 0.5rem; /* Add spacing between status items */
+    border: 1px solid rgba(0, 0, 0, 0.05); /* Subtle border instead of shadow */
 }
 
 .playing-status {
-    background-color: rgba(0, 184, 148, 0.1);  /* Light green */
+    background-color: rgba(0, 184, 148, 0.15);  /* Slightly darker green */
 }
 
 .empty-status {
-    background-color: rgba(116, 185, 255, 0.1);  /* Light blue */
+    background-color: rgba(116, 185, 255, 0.15);  /* Slightly darker blue */
 }
 
 .waiting-status {
-    background-color: rgba(255, 234, 167, 0.1);  /* Light sand */
+    background-color: rgba(255, 234, 167, 0.15);  /* Slightly darker sand */
 }
 
 .status-label {
@@ -984,7 +985,7 @@ li:hover .delete-btn {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 140px;
+    max-width: 120px; /* Reduced from 140px to ensure consistent width */
 }
 
 .court-actions {
@@ -1240,11 +1241,16 @@ li:hover .delete-btn {
     text-decoration: none;
     color: inherit;
     display: block;
+    box-shadow: none; /* Override the default link shadow */
+    background-color: transparent; /* Override default link background */
+    padding: 0; /* Override default link padding */
+    margin: 0; /* Override default link margin */
+    border-radius: 0; /* Override default link border-radius */
 }
         
 .court-card {
     cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease;
 }
         
 .court-card:hover {
@@ -1256,21 +1262,26 @@ li:hover .delete-btn {
 @media (max-width: 1024px) and (min-width: 769px) {
     .courts-grid {
         grid-template-columns: repeat(2, 1fr); /* 2 columns for medium screens */
+        justify-items: center; /* Center items horizontally */
     }
     
     .court-card {
-        height: 220px; /* Maintain fixed height */
+        height: 250px; /* Increased height */
+        width: 100%; /* Use percentage width */
+        max-width: 400px; /* Increased from 350px */
     }
 }
 
 @media (max-width: 768px) {
     .courts-grid {
         grid-template-columns: 1fr; /* 1 column for mobile */
+        justify-items: center; /* Center items horizontally */
     }
     
     .court-card {
-        height: 220px; /* Maintain fixed height */
-        max-width: 400px; /* Limit width on small screens */
+        height: 250px; /* Increased height */
+        width: 100%; /* Use full width for mobile */
+        max-width: 450px; /* Increased max-width */
         margin: 0 auto; /* Center the cards */
     }
     
@@ -1397,4 +1408,9 @@ li:hover .delete-btn {
     .language-selector i {
         font-size: 0.8rem;
     }
+}
+
+.court-card-link .court-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 } 

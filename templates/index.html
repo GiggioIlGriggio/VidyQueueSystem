@@ -45,7 +45,7 @@
         <div class="courts-grid">
             {% for court in court_data %}
             <a href="/court/{{ court.id }}?lang={{ current_language() }}" class="court-card-link">
-                <div class="court-card" style="border-color: {{ court.color }}; box-shadow: 0 4px 6px -1px {{ court.color }}44;">
+                <div class="court-card" style="border-color: {{ court.color }};">
                     <div class="court-header" style="background-color: {{ court.color }};">
                         <h3><i class="fas fa-{{ court.icon }}"></i> {{ court.name }}</h3>
                     </div>
