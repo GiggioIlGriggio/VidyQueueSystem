@@ -24,11 +24,12 @@
         <h1><i class="fas fa-volleyball-ball"></i> {{ get_text('index.heading') }}</h1>
         
         <div class="tutorial">
-            <div class="tutorial-header">
+            <div class="tutorial-header" id="quick-guide-header">
                 <h2><i class="fas fa-info-circle"></i> {{ get_text('index.quick_guide') }}</h2>
-                <button class="expand-btn" aria-label="Toggle quick guide">
+                <div class="toggle-indicator">
                     <span class="expand-icon">▼</span>
-                </button>
+                    <span class="click-hint">{{ get_text('index.click') }}</span>
+                </div>
             </div>
             <div class="tutorial-content">
                 <ol>
@@ -51,22 +52,31 @@
                     </div>
                     <div class="court-body">
                         <div class="court-status">
-                            {% if court.currently_playing %}
-                            <p class="playing-status">
-                                <span class="status-label">{{ get_text('index.currently_playing') }}</span>
-                                <span class="status-value">{{ court.currently_playing }}</span>
-                            </p>
+                            <div class="waiting-teams-count" style="--court-color: {{ court.color }}">
+                                <span class="count-number">{{ court.waiting_count }}</span>
+                                <span class="teams-label">{{ get_text('index.teams_waiting') }}</span>
+                            </div>
+                            
+                            {% if court.waiting_count > 0 %}
+                                <div class="waiting-time-display">
+                                    <div class="time-icon">
+                                        <i class="fas fa-hourglass-half"></i>
+                                    </div>
+                                    <div class="time-details">
+                                        <span class="time-label">{{ get_text('index.estimated_wait') }}</span>
+                                        <span class="time-value">{{ court.waiting_count * 15 // 60 }}h {{ court.waiting_count * 15 % 60 }}m</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="queue-visual-indicator">
+                                    <div class="queue-bar" style="width: {{ (court.waiting_count * 20) if (court.waiting_count * 20) < 100 else 100 }}%; background: linear-gradient(90deg, {{ court.color }}33, {{ court.color }})"></div>
+                                </div>
                             {% else %}
-                            <p class="empty-status">
-                                <span class="status-label">{{ get_text('index.status') }}</span>
-                                <span class="status-value">{{ get_text('index.available') }}</span>
-                            </p>
+                                <div class="court-available">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>{{ get_text('index.available') }}</span>
+                                </div>
                             {% endif %}
-
-                            <p class="waiting-status">
-                                <span class="status-label">{{ get_text('index.teams_waiting') }}</span>
-                                <span class="status-value">{{ court.waiting_count }}</span>
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -81,14 +91,24 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const expandBtn = document.querySelector('.expand-btn');
+            const tutorialHeader = document.getElementById('quick-guide-header');
             const tutorialContent = document.querySelector('.tutorial-content');
             const expandIcon = document.querySelector('.expand-icon');
             
-            expandBtn.addEventListener('click', function() {
+            // Toggle the Quick Guide when clicking on the header
+            tutorialHeader.addEventListener('click', function() {
                 tutorialContent.classList.toggle('expanded');
                 expandIcon.textContent = tutorialContent.classList.contains('expanded') ? '▼' : '▶';
             });
+
+            // Auto-expand the Quick Guide on first visit (can be controlled with localStorage)
+            if (!localStorage.getItem('quickGuideViewed')) {
+                setTimeout(() => {
+                    tutorialContent.classList.add('expanded');
+                    expandIcon.textContent = '▼';
+                    localStorage.setItem('quickGuideViewed', 'true');
+                }, 500);
+            }
         });
 
         function changeLanguage(lang) {

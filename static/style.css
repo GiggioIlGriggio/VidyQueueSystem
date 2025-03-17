@@ -44,15 +44,17 @@ h1 {
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 2rem;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    background: linear-gradient(135deg, var(--beach-blue) 0%, #0984e3 100%);
     padding: 1.5rem;
     border-radius: 1rem;
-    box-shadow: var(--shadow);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     text-align: center;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
     position: relative;
     overflow: hidden;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+    border: 3px solid rgba(255, 255, 255, 0.3);
 }
 
 h1::before {
@@ -62,8 +64,18 @@ h1::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="white" stroke-width="2" stroke-opacity="0.1"/></svg>') center/cover;
-    opacity: 0.1;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="white" stroke-width="2" stroke-opacity="0.2"/></svg>') center/25px;
+    opacity: 0.25;
+    animation: backgroundShift 20s linear infinite;
+}
+
+@keyframes backgroundShift {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 100px 100px;
+    }
 }
 
 h2 {
@@ -473,6 +485,32 @@ li {
     margin: 2rem auto;
     max-width: 600px;
     border: 2px solid #ddd;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.tutorial:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.tutorial::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+    top: 0;
+    left: 0;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.5s ease;
+}
+
+.tutorial:hover::before {
+    transform: scaleX(1);
 }
 
 .tutorial-header {
@@ -480,6 +518,35 @@ li {
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.tutorial-header:hover {
+    background-color: rgba(255, 107, 107, 0.1);
+}
+
+.tutorial-header:hover .expand-icon {
+    transform: scale(1.2);
+    color: var(--primary-color);
+}
+
+.tutorial-header::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary-light), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.tutorial-header:hover::after {
+    opacity: 1;
 }
 
 .tutorial-header h2 {
@@ -491,46 +558,76 @@ li {
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
     box-shadow: none;
+    transition: all 0.3s ease;
 }
 
-.expand-btn {
-    background: none;
-    border: none;
-    padding: 0.5rem;
-    cursor: pointer;
-    color: black;
+.expand-icon {
+    color: var(--primary-color);
     font-size: 1.2rem;
-    transition: transform 0.3s ease;
-    width: auto;
-    box-shadow: none;
-}
-
-.expand-btn:hover {
-    transform: scale(1.1);
+    transition: transform 0.3s ease, color 0.3s ease;
+    margin-right: 0.5rem;
 }
 
 .tutorial-content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease-out;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease;
+    opacity: 0;
 }
 
 .tutorial-content.expanded {
     max-height: 500px;
     margin-top: 1rem;
+    opacity: 1;
 }
 
 .tutorial ol {
     list-style-position: inside;
-    padding-left: 0;
+    padding-left: 1rem;
     margin: 0;
+    counter-reset: item;
+    list-style-type: none;
 }
 
 .tutorial li {
-    color: black;
+    color: var(--text-primary);
     background: none;
     box-shadow: none;
-    padding: 0.5rem 0;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+    counter-increment: item;
+    padding-left: 2rem;
+}
+
+.tutorial li:last-child {
+    border-bottom: none;
+}
+
+.tutorial li::before {
+    content: counter(item);
+    position: absolute;
+    left: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: var(--primary-light);
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.tutorial li:hover {
+    background-color: rgba(255, 107, 107, 0.05);
+}
+
+.tutorial li:hover::before {
+    background-color: var(--primary-color);
+    transform: scale(1.1);
 }
 
 .empty-queue {
@@ -883,12 +980,53 @@ li:hover .delete-btn {
 .courts-header {
     color: var(--white);
     font-size: 2rem;
-    margin: 2rem 0 1rem;
+    margin: 2.5rem 0 1.5rem;
     text-align: center;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    padding: 1rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #ff9f43 100%);
+    padding: 1.25rem;
     border-radius: 0.75rem;
-    box-shadow: var(--shadow);
+    box-shadow: 0 8px 12px -3px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15);
+    border-left: 4px solid rgba(255, 255, 255, 0.4);
+    border-right: 4px solid rgba(255, 255, 255, 0.4);
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.courts-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+    z-index: 1;
+    transform: skewX(-15deg) translateX(-100%);
+    animation: shimmerEffect 3s infinite;
+}
+
+.courts-header::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50,15 a35,35 0 0,1 0,70 a35,35 0 0,1 0,-70" fill="none" stroke="white" stroke-width="2" stroke-opacity="0.15"/></svg>') center/35px;
+    opacity: 0.3;
+    z-index: 0;
+}
+
+@keyframes shimmerEffect {
+    0% {
+        transform: skewX(-15deg) translateX(-100%);
+    }
+    100% {
+        transform: skewX(-15deg) translateX(200%);
+    }
 }
 
 .courts-grid {
@@ -904,30 +1042,32 @@ li:hover .delete-btn {
     flex-direction: column;
     background-color: var(--white);
     border-radius: 1rem;
-    overflow: hidden;
+    overflow: visible;
     border: 3px solid;
     transition: transform 0.3s ease;
-    min-width: 0; /* Helps with text overflow in grid items */
-    /* Larger dimensions to fill more space */
-    height: 250px;
+    min-width: 0;
+    height: 240px;
     width: 100%; 
-    max-width: 350px; /* Increased from 280px */
-    margin: 0 auto; /* Center the card in its grid cell */
-    box-shadow: none !important; /* Explicitly remove any shadow */
+    max-width: 300px;
+    margin: 0 auto;
+    box-shadow: none !important;
     cursor: pointer;
 }
 
 .court-header {
-    padding: 1rem;
+    padding: 0.75rem;
     color: var(--white);
-    min-height: 60px;
+    min-height: 45px;
     display: flex;
     align-items: center;
+    margin-bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 .court-header h3 {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
@@ -935,12 +1075,13 @@ li:hover .delete-btn {
 }
 
 .court-body {
-    padding: 1.25rem;
+    padding: 0.5rem 1.25rem 1.25rem 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 0.75rem;
     flex: 1;
-    overflow: hidden; /* Prevent content from stretching the card */
+    overflow: visible;
+    margin-top: 0;
 }
 
 .court-status {
@@ -955,23 +1096,23 @@ li:hover .delete-btn {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1rem; /* Increased padding */
+    padding: 0.75rem 1rem;
     border-radius: 0.5rem;
-    font-size: 1rem; /* Slightly larger font */
-    margin-bottom: 0.5rem; /* Add spacing between status items */
-    border: 1px solid rgba(0, 0, 0, 0.05); /* Subtle border instead of shadow */
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .playing-status {
-    background-color: rgba(0, 184, 148, 0.15);  /* Slightly darker green */
+    background-color: rgba(0, 184, 148, 0.15);
 }
 
 .empty-status {
-    background-color: rgba(116, 185, 255, 0.15);  /* Slightly darker blue */
+    background-color: rgba(116, 185, 255, 0.15);
 }
 
 .waiting-status {
-    background-color: rgba(255, 234, 167, 0.15);  /* Slightly darker sand */
+    background-color: rgba(255, 234, 167, 0.15);
 }
 
 .status-label {
@@ -985,7 +1126,7 @@ li:hover .delete-btn {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 120px; /* Reduced from 140px to ensure consistent width */
+    max-width: 120px;
 }
 
 .court-actions {
@@ -1279,10 +1420,14 @@ li:hover .delete-btn {
     }
     
     .court-card {
-        height: 250px; /* Increased height */
-        width: 100%; /* Use full width for mobile */
-        max-width: 450px; /* Increased max-width */
-        margin: 0 auto; /* Center the cards */
+        height: auto;  /* Changed from fixed height to auto to prevent overlapping */
+        min-height: 220px; /* Minimum height rather than fixed height */
+        max-width: 280px;
+        padding-bottom: 0.75rem;  /* Added padding at the bottom for spacing */
+    }
+    
+    .court-body {
+        padding: 0.5rem 1rem 1rem 1rem;
     }
     
     .court-actions, .court-admin-actions {
@@ -1305,6 +1450,32 @@ li:hover .delete-btn {
     .currently-playing {
         flex-direction: column;
         align-items: flex-start;
+    }
+    
+    .waiting-time-display {
+        padding: 0.4rem;  /* Slightly smaller padding on mobile */
+    }
+    
+    .time-icon {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+    
+    .time-value {
+        font-size: 0.9rem;
+    }
+    
+    .court-available i {
+        font-size: 1.75rem;
+    }
+    
+    .court-available span {
+        font-size: 0.9rem;
+    }
+
+    .queue-visual-indicator {
+        margin-top: 0.15rem;  /* Even closer on mobile */
+        height: 0.35rem;  /* Slightly smaller height on mobile */
     }
 }
 
@@ -1413,4 +1584,175 @@ li:hover .delete-btn {
 .court-card-link .court-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+/* New Court Card Styling */
+.waiting-teams-count {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem 0.75rem 0.5rem;
+    position: relative;
+    margin-top: 0;
+}
+
+.count-number {
+    font-size: 2.75rem;
+    font-weight: 700;
+    color: var(--court-color, var(--primary-color));
+    line-height: 1.1;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 0.25rem;
+    padding: 0;
+    margin-top: 0;
+    display: block;
+}
+
+.teams-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.1rem;
+}
+
+.waiting-time-display {
+    display: flex;
+    align-items: center;
+    background-color: rgba(0,0,0,0.03);
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;  /* Reduced from 0.5rem to make it closer */
+    width: 100%;
+    margin-top: 0.4rem;
+}
+
+.time-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    background: var(--court-color, var(--primary-color));
+    color: white;
+    font-size: 0.9rem;
+}
+
+.time-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.time-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.2rem;
+}
+
+.time-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.queue-visual-indicator {
+    height: 0.4rem;
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 1rem;
+    overflow: hidden;
+    margin-top: 0.2rem;  /* Reduced from 0.4rem to make it closer */
+    width: 100%;
+    margin-bottom: 0.4rem;
+}
+
+.queue-bar {
+    height: 100%;
+    border-radius: 1rem;
+    transition: width 0.5s ease;
+}
+
+.court-available {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.5rem 0.7rem;
+    color: #00B894;
+    margin: 0.25rem auto 0.5rem;
+    max-width: 85%;
+}
+
+.court-available i {
+    font-size: 2rem;
+    margin-bottom: 0.4rem;
+}
+
+.court-available span {
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* Adjust for responsive design */
+@media (max-width: 768px) {
+    .court-card {
+        height: auto;  /* Changed from fixed height to auto to prevent overlapping */
+        min-height: 220px; /* Minimum height rather than fixed height */
+        max-width: 280px;
+        padding-bottom: 0.75rem;  /* Added padding at the bottom for spacing */
+    }
+    
+    .count-number {
+        font-size: 2.5rem;
+    }
+    
+    .time-icon {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+    
+    .time-value {
+        font-size: 0.9rem;
+    }
+    
+    .court-available i {
+        font-size: 1.75rem;
+    }
+    
+    .court-available span {
+        font-size: 0.9rem;
+    }
+
+    .queue-visual-indicator {
+        margin-top: 0.15rem;  /* Even closer on mobile */
+        height: 0.35rem;  /* Slightly smaller height on mobile */
+    }
+}
+
+.toggle-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.click-hint {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background-color: rgba(255, 107, 107, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+}
+
+.tutorial-header:hover .click-hint {
+    opacity: 1;
+    transform: translateX(0);
 } 

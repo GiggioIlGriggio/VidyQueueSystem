@@ -7,6 +7,7 @@
     "index": {
         "heading": "Beach Volleyball Vidy",
         "quick_guide": "Quick Guide",
+        "click": "Click to toggle",
         "guide_step1": "Select a court from the options below",
         "guide_step2": "Enter your team name to join the queue for your preferred court",
         "guide_step3": "Your team will be added to the queue with an estimated wait time",
@@ -15,7 +16,8 @@
         "currently_playing": "Currently Playing:",
         "status": "Status:",
         "available": "Available",
-        "teams_waiting": "Teams Waiting:"
+        "teams_waiting": "Teams Waiting:",
+        "estimated_wait": "Est. Wait Time"
     },
     "court": {
         "current_queue": "Current Queue",

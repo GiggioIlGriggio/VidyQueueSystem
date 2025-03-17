@@ -7,6 +7,7 @@
     "index": {
         "heading": "Beach Volleyball Vidy",
         "quick_guide": "Guide Rapide",
+        "click": "Cliquer pour ouvrir/fermer",
         "guide_step1": "Sélectionnez un terrain parmi les options ci-dessous",
         "guide_step2": "Entrez le nom de votre équipe pour rejoindre la file d'attente de votre terrain préféré",
         "guide_step3": "Votre équipe sera ajoutée à la file d'attente avec un temps d'attente estimé",
@@ -15,7 +16,8 @@
         "currently_playing": "Actuellement en Jeu :",
         "status": "Statut :",
         "available": "Disponible",
-        "teams_waiting": "Équipes en Attente :"
+        "teams_waiting": "Équipes en Attente :",
+        "estimated_wait": "Temps d'Attente Est."
     },
     "court": {
         "current_queue": "File d'Attente Actuelle",
