@@ -11,14 +11,10 @@
     "court_name": "Court 2",
     "queue": [
       {
-        "name": "team1",
-        "time": 743,
-        "estimated_wait": 0
-      },
-      {
-        "name": "team2",
-        "time": 0,
-        "estimated_wait": 743
+        "name": "prova",
+        "time": 856,
+        "estimated_wait": 0,
+        "start_timestamp": 1742215994.027193
       }
     ],
     "history": [
@@ -171,6 +167,34 @@
           }
         ],
         "action": "Added team: team2"
+      },
+      {
+        "timestamp": "2025-03-17T12:19:32.341446",
+        "queue": [
+          {
+            "name": "team2",
+            "time": 0,
+            "estimated_wait": 0
+          }
+        ],
+        "action": "Shifted queue - Removed team: team1"
+      },
+      {
+        "timestamp": "2025-03-17T13:29:08.536495",
+        "queue": [],
+        "action": "Shifted queue - Removed team: team2"
+      },
+      {
+        "timestamp": "2025-03-17T13:53:14.027193",
+        "queue": [
+          {
+            "name": "prova",
+            "time": 856,
+            "estimated_wait": 0,
+            "start_timestamp": 1742215994.027193
+          }
+        ],
+        "action": "Added team: prova"
       }
     ],
     "match_duration": 900
@@ -178,8 +202,53 @@
   {
     "court_id": 2,
     "court_name": "Court 3",
-    "queue": [],
-    "history": [],
+    "queue": [
+      {
+        "name": "prossimo",
+        "time": 354,
+        "estimated_wait": 0
+      }
+    ],
+    "history": [
+      {
+        "timestamp": "2025-03-17T13:43:57.921244",
+        "queue": [
+          {
+            "name": "team1",
+            "time": 889,
+            "estimated_wait": 0
+          }
+        ],
+        "action": "Added team: team1"
+      },
+      {
+        "timestamp": "2025-03-17T13:44:03.493745",
+        "queue": [
+          {
+            "name": "team1",
+            "time": 889,
+            "estimated_wait": 0
+          },
+          {
+            "name": "prossimo",
+            "time": 413,
+            "estimated_wait": 0
+          }
+        ],
+        "action": "Added team: prossimo"
+      },
+      {
+        "timestamp": "2025-03-17T13:44:08.211182",
+        "queue": [
+          {
+            "name": "prossimo",
+            "time": 413,
+            "estimated_wait": 0
+          }
+        ],
+        "action": "Shifted queue - Removed team: team1"
+      }
+    ],
     "match_duration": 900
   },
   {

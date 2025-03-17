@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, s
 import time
 from threading import Thread
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 app = Flask(__name__)
@@ -246,6 +246,13 @@ def view_court(court_id):
         court = court_system.courts[court_id]
         queue_data = [{'name': team['name'], 'time': team['time'], 'estimated_wait': team['estimated_wait']} 
                      for team in court.queue]
+                     
+        # Add start timestamp for the first team if available
+        if queue_data and len(court.queue) > 0 and 'start_timestamp' in court.queue[0] and court.queue[0]['start_timestamp']:
+            queue_data[0]['start_timestamp'] = court.queue[0]['start_timestamp']
+            # Add server current timestamp for time synchronization
+            queue_data[0]['server_time'] = datetime.now().timestamp()
+            
         for team in queue_data:
             team['time_str'] = f"{team['time'] // 60}:{team['time'] % 60:02d}"
             team['wait_str'] = f"{team['estimated_wait'] // 60}:{team['estimated_wait'] % 60:02d}"
@@ -319,6 +326,13 @@ def get_queue_data(court_id):
         court = court_system.courts[court_id]
         queue_data = [{'name': team['name'], 'time': team['time'], 'estimated_wait': team['estimated_wait']} 
                      for team in court.queue]
+                     
+        # Add start timestamp for the first team if available
+        if queue_data and len(court.queue) > 0 and 'start_timestamp' in court.queue[0] and court.queue[0]['start_timestamp']:
+            queue_data[0]['start_timestamp'] = court.queue[0]['start_timestamp']
+            # Add server current timestamp for time synchronization
+            queue_data[0]['server_time'] = datetime.now().timestamp()
+            
         for team in queue_data:
             team['time_str'] = f"{team['time'] // 60}:{team['time'] % 60:02d}"
             team['wait_str'] = f"{team['estimated_wait'] // 60}:{team['estimated_wait'] % 60:02d}"
@@ -409,6 +423,13 @@ class QueueSystem:
         if 0 <= index < len(self.history):
             state = self.history[index]
             self.queue = state['queue'].copy()
+            
+            # If there's a playing team, update its start_timestamp to now
+            if self.queue and 'time' in self.queue[0]:
+                current_time = self.queue[0]['time']
+                # Calculate a timestamp that makes the remaining time correct
+                self.queue[0]['start_timestamp'] = datetime.now().timestamp() - (self.MATCH_DURATION - current_time)
+            
             self.update_estimated_waits()
             
             # Persist data after state changes
@@ -418,44 +439,64 @@ class QueueSystem:
 
     def add_team(self, team_name):
         """Add a team to the end of the queue."""
-        self.queue.append({
-            'name': team_name,
-            'time': self.MATCH_DURATION if len(self.queue) == 0 else 0,  # First team gets match time, others wait
-            'estimated_wait': self.calculate_estimated_wait(len(self.queue))
-        })
+        current_time = datetime.now().timestamp()
+        
+        if len(self.queue) == 0:
+            # First team gets match time and a start timestamp
+            self.queue.append({
+                'name': team_name,
+                'time': self.MATCH_DURATION,
+                'estimated_wait': self.calculate_estimated_wait(len(self.queue)),
+                'start_timestamp': current_time  # Time when the team started playing
+            })
+        else:
+            # Other teams wait and don't have a start timestamp yet
+            self.queue.append({
+                'name': team_name,
+                'time': 0,
+                'estimated_wait': self.calculate_estimated_wait(len(self.queue)),
+                'start_timestamp': None
+            })
+            
         print(f"Team {team_name} added to {self.court_name} queue.")
         self.save_state(f"Added team: {team_name}")
 
     def calculate_estimated_wait(self, position):
-        """Calculate estimated wait time for a team at a given position."""
-        if position == 0:  # Currently playing team
-            return 0
-        elif position > len(self.queue):
+        """Calculate the estimated wait time for a team at the given position."""
+        if position <= 0:
             return 0
         
+        # Calculate wait time based on the current team's remaining time
         wait_time = 0
-        # Add remaining time of current playing team
-        if self.queue and self.queue[0]['time'] > 0:
-            wait_time += self.queue[0]['time']
-        
-        # Add full match duration for each team ahead
+        if self.queue and position > 0:
+            if 'start_timestamp' in self.queue[0] and self.queue[0]['start_timestamp']:
+                # Calculate time remaining for current team using timestamp
+                elapsed = datetime.now().timestamp() - self.queue[0]['start_timestamp']
+                remaining = max(0, self.MATCH_DURATION - elapsed)
+                wait_time = remaining
+            else:
+                # Fall back to the time field if timestamp not available
+                wait_time = self.queue[0]['time']
+                
+        # Add match duration for each team ahead in the queue (excluding the currently playing team)
         wait_time += (position - 1) * self.MATCH_DURATION
-        return wait_time
+        
+        return int(wait_time)
 
     def shift_queue(self):
-        """Remove the team at the top of the queue and update remaining teams."""
+        """Remove the first team from the queue and shift everyone up."""
         if self.queue:
             removed_team = self.queue.pop(0)
-            print(f"Team {removed_team['name']} has been removed from {self.court_name} queue.")
             
-            # Update remaining teams
-            for i, team in enumerate(self.queue):
-                if team['time'] == 0:  # If team was waiting
-                    team['time'] = self.MATCH_DURATION  # Give them match time
-                team['estimated_wait'] = self.calculate_estimated_wait(i)
+            # If there's a next team to play, set its initial time and start timestamp
+            if self.queue:
+                self.queue[0]['time'] = self.MATCH_DURATION
+                self.queue[0]['start_timestamp'] = datetime.now().timestamp()
+                
+            self.update_estimated_waits()
             self.save_state(f"Shifted queue - Removed team: {removed_team['name']}")
-        else:
-            print(f"The {self.court_name} queue is empty.")
+            return removed_team
+        return None
 
     def check_and_shift_queue(self):
         """Check the first team's time and shift the queue if necessary."""
@@ -463,9 +504,9 @@ class QueueSystem:
             self.shift_queue()
 
     def update_estimated_waits(self):
-        """Update estimated wait times for all teams in the queue."""
-        for i, team in enumerate(self.queue):
-            team['estimated_wait'] = self.calculate_estimated_wait(i)
+        """Update the estimated wait times for all teams in the queue."""
+        for i in range(1, len(self.queue)):
+            self.queue[i]['estimated_wait'] = self.calculate_estimated_wait(i)
             
     def start_timer(self):
         """Start the timer thread to decrement time for each team."""
@@ -477,7 +518,15 @@ class QueueSystem:
         """Decrement time for each team every second."""
         while self.running:
             if self.queue:  # Only update if there are teams
-                self.queue[0]['time'] -= 1  # Only decrement time for the playing team
+                # Only update time for the playing team
+                if 'start_timestamp' in self.queue[0] and self.queue[0]['start_timestamp']:
+                    # Calculate time remaining based on timestamp
+                    elapsed = datetime.now().timestamp() - self.queue[0]['start_timestamp']
+                    self.queue[0]['time'] = max(0, int(self.MATCH_DURATION - elapsed))
+                else:
+                    # Fallback to traditional timer
+                    self.queue[0]['time'] -= 1
+                    
                 self.update_estimated_waits()  # Update wait times
                 self.check_and_shift_queue()
             time.sleep(1)

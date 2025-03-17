@@ -174,6 +174,7 @@
             const MATCH_DURATION = 900; // 15 minutes in seconds
             let isAnimating = false;
             let localTimer = null;
+            let clientStartTime = Date.now() / 1000; // Current client timestamp in seconds
             
             // Store translations for use in JavaScript
             const translations = {{ translations_js|tojson }};
@@ -181,13 +182,27 @@
             function updateQueueTimes() {
                 const queueList = document.querySelector('ul');
                 if (queueData.length > 0) {
-                    // Only update the playing team's time
-                    queueData[0].time -= 1;
+                    const currentTeam = queueData[0];
+                    const clientCurrentTime = Date.now() / 1000;
+                    
+                    // If we have a start_timestamp, calculate time based on elapsed real time
+                    if (currentTeam.start_timestamp) {
+                        // Calculate elapsed time since the team started playing
+                        const clientElapsed = clientCurrentTime - clientStartTime; // Time elapsed on client
+                        const serverTimeAtLoad = currentTeam.server_time || clientStartTime; // When the data was loaded
+                        
+                        // Current elapsed time is the original elapsed time plus time spent on the page
+                        const totalElapsed = (serverTimeAtLoad - currentTeam.start_timestamp) + clientElapsed;
+                        currentTeam.time = Math.max(0, Math.floor(MATCH_DURATION - totalElapsed));
+                    } else {
+                        // Fallback to simple decrement for backward compatibility
+                        currentTeam.time -= 1;
+                    }
                     
                     const listItem = queueList.children[0];
                     if (listItem && !listItem.classList.contains('register-team')) {
-                        const minutes = Math.floor(queueData[0].time / 60);
-                        const seconds = queueData[0].time % 60;
+                        const minutes = Math.floor(currentTeam.time / 60);
+                        const seconds = currentTeam.time % 60;
                         const timeSpan = listItem.querySelector('.team-time');
                         const progressBar = listItem.querySelector('.progress-bar');
                         
@@ -196,14 +211,14 @@
                         }
                         
                         if (progressBar) {
-                            const percentage = (queueData[0].time / MATCH_DURATION) * 100;
+                            const percentage = (currentTeam.time / MATCH_DURATION) * 100;
                             progressBar.style.width = `${Math.max(0, percentage)}%`;
                         }
 
                         // Update wait times for all teams by calculating locally
                         for (let i = 1; i < queueData.length; i++) {
                             // Update estimated wait time based on current playing team's time
-                            queueData[i].estimated_wait = queueData[0].time + (i - 1) * MATCH_DURATION;
+                            queueData[i].estimated_wait = currentTeam.time + (i - 1) * MATCH_DURATION;
                             
                             const waitListItem = queueList.children[i];
                             if (waitListItem && !waitListItem.classList.contains('register-team')) {
@@ -216,7 +231,7 @@
                             }
                         }
 
-                        if (queueData[0].time <= 0 && !isAnimating) {
+                        if (currentTeam.time <= 0 && !isAnimating) {
                             isAnimating = true;
                             listItem.classList.add('shift-out');
                             setTimeout(() => {
@@ -346,12 +361,17 @@
                         // Get the queue data from the response
                         const fetchedQueue = data.queue || [];
                         
-                        // If we have local data and there's a first team playing, preserve its current time
-                        // to avoid jumps in the timer caused by network delay
-                        if (queueData.length > 0 && fetchedQueue.length > 0 && 
-                            queueData[0].name === fetchedQueue[0].name) {
-                            const currentTime = queueData[0].time;
-                            fetchedQueue[0].time = currentTime;
+                        // If we have a team playing with timestamp data, update our timing info
+                        if (fetchedQueue.length > 0 && fetchedQueue[0].start_timestamp) {
+                            // Keep track of when we received this data for time calculations
+                            clientStartTime = Date.now() / 1000;
+                            
+                            // If the same team is still playing, keep using our locally calculated time
+                            // to avoid jumps due to network delays
+                            if (queueData.length > 0 && queueData[0].name === fetchedQueue[0].name) {
+                                const currentTime = queueData[0].time;
+                                fetchedQueue[0].time = currentTime;
+                            }
                         }
                         
                         // Update our local queue data
