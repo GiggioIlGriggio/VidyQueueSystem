@@ -894,6 +894,7 @@ li:hover .delete-btn {
     grid-template-columns: repeat(4, 1fr); /* Fixed 4 columns for desktop */
     gap: 1.5rem;
     margin: 2rem 0;
+    width: 100%;
 }
 
 .court-card {
@@ -906,6 +907,9 @@ li:hover .delete-btn {
     border: 3px solid;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     min-width: 0; /* Helps with text overflow in grid items */
+    /* Fixed dimensions for consistent sizing */
+    height: 220px;
+    width: 100%;
 }
 
 .court-card:hover {
@@ -914,14 +918,20 @@ li:hover .delete-btn {
 }
 
 .court-header {
-    padding: 1.25rem;
+    padding: 1rem;
     color: var(--white);
+    min-height: 60px;
+    display: flex;
+    align-items: center;
 }
 
 .court-header h3 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .court-body {
@@ -930,21 +940,24 @@ li:hover .delete-btn {
     flex-direction: column;
     gap: 1.25rem;
     flex: 1;
+    overflow: hidden; /* Prevent content from stretching the card */
 }
 
 .court-status {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    height: 100%;
+    justify-content: center;
 }
 
 .playing-status, .empty-status, .waiting-status {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem;
+    padding: 0.5rem 0.75rem;
     border-radius: 0.5rem;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     background-color: var(--primary-bg);
 }
 
@@ -1239,16 +1252,26 @@ li:hover .delete-btn {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
-/* Add a medium-sized screen breakpoint */
+/* Update media queries to maintain card dimensions */
 @media (max-width: 1024px) and (min-width: 769px) {
     .courts-grid {
         grid-template-columns: repeat(2, 1fr); /* 2 columns for medium screens */
+    }
+    
+    .court-card {
+        height: 220px; /* Maintain fixed height */
     }
 }
 
 @media (max-width: 768px) {
     .courts-grid {
-        grid-template-columns: 1fr; /* Single column for mobile */
+        grid-template-columns: 1fr; /* 1 column for mobile */
+    }
+    
+    .court-card {
+        height: 220px; /* Maintain fixed height */
+        max-width: 400px; /* Limit width on small screens */
+        margin: 0 auto; /* Center the cards */
     }
     
     .court-actions, .court-admin-actions {
