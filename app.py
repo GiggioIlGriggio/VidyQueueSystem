@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, make_response
 import time
 from threading import Thread
 import json
@@ -206,6 +206,9 @@ def home():
     elif session.get('language') != DEFAULT_LANGUAGE:
         # Redirect to include the language parameter in URL
         return redirect(url_for_with_lang('home'))
+    
+    # Check for updates to the file from other processes
+    court_system.check_for_file_updates()
         
     court_data = []
     for court_id in range(len(COURT_NAMES)):
@@ -225,8 +228,13 @@ def home():
             'currently_playing': currently_playing,
             'waiting_count': waiting_count
         })
-        
-    return render_template('index.html', court_data=court_data)
+    
+    response = make_response(render_template('index.html', court_data=court_data))
+    # Add cache control headers to prevent browser caching
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 # Route for viewing a specific court
 @app.route('/court/<int:court_id>')
@@ -321,6 +329,9 @@ def get_queue_data(court_id):
     # Handle language parameter if present
     if request.args.get('lang') in AVAILABLE_LANGUAGES:
         session['language'] = request.args.get('lang')
+    
+    # Check for updates to the file from other processes
+    court_system.check_for_file_updates()
         
     if 0 <= court_id < len(COURT_NAMES):
         court = court_system.courts[court_id]
@@ -395,6 +406,40 @@ def url_for_with_lang(*args, **kwargs):
     lang = session.get('language', DEFAULT_LANGUAGE)
     kwargs['lang'] = lang
     return url_for(*args, **kwargs)
+
+# Route to get courts data for homepage
+@app.route('/courts_data')
+def get_courts_data():
+    # Handle language parameter if present
+    if request.args.get('lang') in AVAILABLE_LANGUAGES:
+        session['language'] = request.args.get('lang')
+    
+    # Check for updates to the file from other processes
+    court_system.check_for_file_updates()
+        
+    court_data = []
+    for court_id in range(len(COURT_NAMES)):
+        court = court_system.courts[court_id]
+        currently_playing = None
+        waiting_count = 0
+        
+        if court.queue:
+            currently_playing = court.queue[0]['name']
+            waiting_count = len(court.queue) - 1
+            
+        court_data.append({
+            'id': court_id,
+            'name': COURT_NAMES[court_id],
+            'color': COURT_COLORS[court_id],
+            'icon': COURT_ICONS[court_id],
+            'currently_playing': currently_playing,
+            'waiting_count': waiting_count
+        })
+    
+    return jsonify({
+        'court_data': court_data,
+        'current_language': session.get('language', DEFAULT_LANGUAGE)
+    })
 
 class QueueSystem:
     def __init__(self, court_id, court_name):
@@ -495,6 +540,8 @@ class QueueSystem:
                 
             self.update_estimated_waits()
             self.save_state(f"Shifted queue - Removed team: {removed_team['name']}")
+            # Force save to JSON immediately to ensure persistence
+            court_system.save_to_json()
             return removed_team
         return None
 
@@ -502,6 +549,8 @@ class QueueSystem:
         """Check the first team's time and shift the queue if necessary."""
         if self.queue and self.queue[0]['time'] <= 0:
             self.shift_queue()
+            # Force save to JSON immediately to ensure persistence
+            court_system.save_to_json()
 
     def update_estimated_waits(self):
         """Update the estimated wait times for all teams in the queue."""
@@ -541,6 +590,8 @@ class QueueSystem:
             deleted_team = self.queue.pop(index)
             self.update_estimated_waits()
             self.save_state(f"Deleted team: {deleted_team['name']}")
+            # Force save to JSON immediately to ensure persistence
+            court_system.save_to_json()
             return deleted_team
         return None
         
@@ -567,6 +618,7 @@ class QueueSystem:
 class MultiCourtSystem:
     def __init__(self, court_names):
         self.courts = []
+        self.last_file_modification = 0
         # Load data from JSON if exists, otherwise create new court systems
         if os.path.exists(COURTS_DATA_FILE):
             try:
@@ -582,6 +634,19 @@ class MultiCourtSystem:
         self.courts = []
         for i, name in enumerate(court_names):
             self.courts.append(QueueSystem(i, name))
+    
+    def check_for_file_updates(self):
+        """Check if the JSON file has been modified by another process and reload if needed"""
+        try:
+            if os.path.exists(COURTS_DATA_FILE):
+                current_mtime = os.path.getmtime(COURTS_DATA_FILE)
+                if current_mtime > self.last_file_modification:
+                    print(f"File modified externally, reloading from {COURTS_DATA_FILE}")
+                    self.load_from_json()
+                    return True
+        except Exception as e:
+            print(f"Error checking for file updates: {e}")
+        return False
         
     def save_to_json(self):
         """Save court system state to JSON file"""
@@ -593,6 +658,8 @@ class MultiCourtSystem:
             with open(COURTS_DATA_FILE, 'w') as f:
                 json.dump(court_data, f, indent=2)
                 
+            # Update the last modification time
+            self.last_file_modification = os.path.getmtime(COURTS_DATA_FILE)
             print(f"Court data saved to {COURTS_DATA_FILE}")
         except Exception as e:
             print(f"Error saving court data: {e}")
@@ -607,6 +674,8 @@ class MultiCourtSystem:
             for data in court_data:
                 self.courts.append(QueueSystem.from_dict(data))
                 
+            # Update the last modification time
+            self.last_file_modification = os.path.getmtime(COURTS_DATA_FILE)
             print(f"Court data loaded from {COURTS_DATA_FILE}")
         except Exception as e:
             print(f"Error loading court data: {e}")
@@ -619,7 +688,7 @@ court_system = MultiCourtSystem(COURT_NAMES)
 def periodic_save():
     """Save court system state to JSON file periodically"""
     while True:
-        time.sleep(30)  # Save every 30 seconds
+        time.sleep(10)  # Save every 10 seconds instead of 30
         court_system.save_to_json()
 
 # Start periodic save in a background thread

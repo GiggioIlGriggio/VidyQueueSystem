@@ -427,8 +427,8 @@
             // Start the timer to update times every second
             localTimer = setInterval(updateQueueTimes, 1000);
             
-            // Fetch fresh data from server every 10 seconds
-            setInterval(fetchQueueData, 10000);
+            // Fetch fresh data from server every 5 seconds instead of 10
+            setInterval(fetchQueueData, 5000);
             
             // Initial fetch to start with updated data
             fetchQueueData();

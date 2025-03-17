@@ -34,33 +34,15 @@
     "court_name": "Court 2",
     "queue": [
       {
-        "name": "sss",
-        "time": 859,
-        "estimated_wait": 0,
-        "start_timestamp": 1742235776.015187
-      },
-      {
-        "name": "sssssss",
-        "time": 0,
-        "estimated_wait": 859,
-        "start_timestamp": null
-      },
-      {
-        "name": "efewwefwefw",
-        "time": 0,
-        "estimated_wait": 1759,
-        "start_timestamp": null
-      },
-      {
-        "name": "wefwefewfweefwf",
-        "time": 0,
-        "estimated_wait": 2659,
-        "start_timestamp": null
-      },
-      {
         "name": "efwfwewfe",
+        "time": 890,
+        "estimated_wait": 900,
+        "start_timestamp": 1742236978.46713
+      },
+      {
+        "name": "sss",
         "time": 0,
-        "estimated_wait": 3559,
+        "estimated_wait": 890,
         "start_timestamp": null
       }
     ],
@@ -509,6 +491,132 @@
           }
         ],
         "action": "Shifted queue - Removed team: prova "
+      },
+      {
+        "timestamp": "2025-03-17T19:41:55.706061",
+        "queue": [
+          {
+            "name": "sssssss",
+            "time": 886,
+            "estimated_wait": 0,
+            "start_timestamp": 1742236915.706061
+          },
+          {
+            "name": "efewwefwefw",
+            "time": 875,
+            "estimated_wait": 886,
+            "start_timestamp": 1742236928.868412
+          },
+          {
+            "name": "wefwefewfweefwf",
+            "time": 0,
+            "estimated_wait": 875,
+            "start_timestamp": null
+          },
+          {
+            "name": "efwfwewfe",
+            "time": 0,
+            "estimated_wait": 1775,
+            "start_timestamp": null
+          }
+        ],
+        "action": "Shifted queue - Removed team: sss"
+      },
+      {
+        "timestamp": "2025-03-17T19:42:08.868412",
+        "queue": [
+          {
+            "name": "efewwefwefw",
+            "time": 875,
+            "estimated_wait": 886,
+            "start_timestamp": 1742236928.868412
+          },
+          {
+            "name": "wefwefewfweefwf",
+            "time": 0,
+            "estimated_wait": 875,
+            "start_timestamp": null
+          },
+          {
+            "name": "efwfwewfe",
+            "time": 0,
+            "estimated_wait": 1775,
+            "start_timestamp": null
+          }
+        ],
+        "action": "Shifted queue - Removed team: sssssss"
+      },
+      {
+        "timestamp": "2025-03-17T19:42:56.698751",
+        "queue": [
+          {
+            "name": "efewwefwefw",
+            "time": 850,
+            "estimated_wait": 886,
+            "start_timestamp": 1742236928.868412
+          },
+          {
+            "name": "wefwefewfweefwf",
+            "time": 900,
+            "estimated_wait": 850,
+            "start_timestamp": 1742236977.917068
+          },
+          {
+            "name": "efwfwewfe",
+            "time": 890,
+            "estimated_wait": 900,
+            "start_timestamp": 1742236978.46713
+          },
+          {
+            "name": "sss",
+            "time": 0,
+            "estimated_wait": 890,
+            "start_timestamp": null
+          }
+        ],
+        "action": "Added team: sss"
+      },
+      {
+        "timestamp": "2025-03-17T19:42:57.917068",
+        "queue": [
+          {
+            "name": "wefwefewfweefwf",
+            "time": 900,
+            "estimated_wait": 850,
+            "start_timestamp": 1742236977.917068
+          },
+          {
+            "name": "efwfwewfe",
+            "time": 890,
+            "estimated_wait": 900,
+            "start_timestamp": 1742236978.46713
+          },
+          {
+            "name": "sss",
+            "time": 0,
+            "estimated_wait": 890,
+            "start_timestamp": null
+          }
+        ],
+        "action": "Shifted queue - Removed team: efewwefwefw"
+      },
+      {
+        "timestamp": "2025-03-17T19:42:58.467130",
+        "queue": [
+          {
+            "name": "efwfwewfe",
+            "time": 890,
+            "estimated_wait": 900,
+            "start_timestamp": 1742236978.46713
+          },
+          {
+            "name": "sss",
+            "time": 0,
+            "estimated_wait": 890,
+            "start_timestamp": null
+          }
+        ],
+        "action": "Shifted queue - Removed team: wefwefewfweefwf"
       }
     ],
     "match_duration": 900
@@ -518,21 +626,15 @@
     "court_name": "Court 3",
     "queue": [
       {
-        "name": "sasa",
-        "time": 4,
-        "estimated_wait": 0,
-        "start_timestamp": 1742234920.61252
-      },
-      {
         "name": "sasaasasas",
-        "time": 0,
-        "estimated_wait": 4,
-        "start_timestamp": null
+        "time": 67,
+        "estimated_wait": 0,
+        "start_timestamp": 1742236155.198128
       },
       {
         "name": "asasasasasasasas",
         "time": 0,
-        "estimated_wait": 904,
+        "estimated_wait": 67,
         "start_timestamp": null
       }
     ],
@@ -855,6 +957,24 @@
           }
         ],
         "action": "Shifted queue - Removed team: prova"
+      },
+      {
+        "timestamp": "2025-03-17T19:29:15.198128",
+        "queue": [
+          {
+            "name": "sasaasasas",
+            "time": 871,
+            "estimated_wait": 0,
+            "start_timestamp": 1742236155.198128
+          },
+          {
+            "name": "asasasasasasasas",
+            "time": 0,
+            "estimated_wait": 871,
+            "start_timestamp": null
+          }
+        ],
+        "action": "Shifted queue - Removed team: sasa"
       }
     ],
     "match_duration": 900
