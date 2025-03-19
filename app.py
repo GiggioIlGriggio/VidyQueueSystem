@@ -22,31 +22,30 @@ if not MONGO_URI.startswith('mongodb://') and not MONGO_URI.startswith('mongodb+
     print("The URI must begin with 'mongodb://' or 'mongodb+srv://'")
     print("Please check your environment variables in the Render dashboard.")
     
-    # Hard-code the MongoDB URI as a fallback for production
-    if os.environ.get('FLASK_ENV') == 'production':
-        print("Using hardcoded MongoDB URI as fallback")
-        # NOTE: You need to replace the YOUR_ACTUAL_PASSWORD placeholder with your real password
-        MONGO_URI = "mongodb+srv://user:YOUR_ACTUAL_PASSWORD@clustersanndmatch.kvu15.mongodb.net/?retryWrites=true&w=majority&appName=ClusterSanndMatch"
-        if MONGO_URI.find("YOUR_ACTUAL_PASSWORD") != -1:
-            print("WARNING: You need to edit app.py and replace YOUR_ACTUAL_PASSWORD with your real MongoDB password!")
-    else:
-        # Use a fallback for local development
-        print("Using fallback local MongoDB for development")
-        MONGO_URI = 'mongodb://localhost:27017/'
+    # Use a fixed MongoDB URI for production
+    print("Using fixed MongoDB URI since environment variable is invalid")
+    # IMPORTANT: In production, this should be set as an environment variable instead of hardcoded here
+    # Replace YOUR_ACTUAL_PASSWORD_HERE with your real password
+    MONGO_URI = "mongodb+srv://user:Password123@clustersanndmatch.kvu15.mongodb.net/?retryWrites=true&w=majority&appName=ClusterSanndMatch"
 
 try:
-    # URL encode the password in the connection string if it contains special characters
+    # Always URL encode the password in the connection string
     if '@' in MONGO_URI:
         # Split the URI into parts before and after the @ symbol
         prefix, suffix = MONGO_URI.split('@', 1)
-        if ':' in prefix:
-            # Split the prefix into username and password
-            username, password = prefix.split(':', 1)
-            # URL encode the password
-            encoded_password = urllib.parse.quote_plus(password)
-            # Reconstruct the URI with encoded password
-            MONGO_URI = f"{username}:{encoded_password}@{suffix}"
+        if ':' in prefix and '/' in prefix:
+            # Get the protocol part (mongodb:// or mongodb+srv://)
+            protocol, rest = prefix.split('//', 1)
+            # Split the rest into username and password
+            if ':' in rest:
+                username, password = rest.split(':', 1)
+                # URL encode the password
+                encoded_password = urllib.parse.quote_plus(password)
+                # Reconstruct the URI with encoded password
+                MONGO_URI = f"{protocol}//{username}:{encoded_password}@{suffix}"
+                print(f"URI password encoded. New prefix: {protocol}//{username}:****@")
     
+    print(f"Connecting to MongoDB with URI starting with: {MONGO_URI.split('@')[0].split(':')[0]}://...")
     mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     # Test the connection
     mongo_client.server_info()
@@ -521,6 +520,35 @@ def debug_env():
             'mongo_uri_prefix': MONGO_URI[:10] + '...' if MONGO_URI else None
         })
     return jsonify({'error': 'Debug endpoints are disabled in production'}), 403
+
+# Simple public debug route for troubleshooting MongoDB
+@app.route('/mongodb-status')
+def mongodb_status():
+    try:
+        info = {
+            'mongodb_connected': False,
+            'mongodb_uri_format_valid': MONGO_URI.startswith('mongodb://') or MONGO_URI.startswith('mongodb+srv://'),
+            'mongodb_uri_prefix': MONGO_URI[:10] + '...' if MONGO_URI else 'None',
+            'environment': os.environ.get('FLASK_ENV', 'development'),
+            'server_time': datetime.now().isoformat()
+        }
+        
+        # Try to connect and get basic information
+        try:
+            mongo_client.server_info()
+            info['mongodb_connected'] = True
+            info['database_name'] = db.name
+            info['collections'] = db.list_collection_names()
+            info['courts_count'] = courts_collection.count_documents({})
+        except Exception as e:
+            info['error'] = str(e)
+            
+        return jsonify(info)
+    except Exception as e:
+        return jsonify({
+            'error': f"Error checking MongoDB status: {str(e)}",
+            'server_time': datetime.now().isoformat()
+        })
 
 class QueueSystem:
     def __init__(self, court_id, court_name):
