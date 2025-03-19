@@ -4,16 +4,21 @@ from threading import Thread
 import json
 from datetime import datetime, timedelta
 import os
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+import urllib.parse
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-default-secret-key')  # More persistent secret key
 
-# Data storage configuration
-DATA_FOLDER = 'data'
-COURTS_DATA_FILE = os.path.join(DATA_FOLDER, 'courts.json')
+# MongoDB configuration
+MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
+mongo_client = MongoClient(MONGO_URI)
+db = mongo_client['beachrank']
+courts_collection = db['courts']
 
-# Ensure the data directory exists
-os.makedirs(DATA_FOLDER, exist_ok=True)
+# Ensure the courts collection has an index on court_id for faster lookups
+courts_collection.create_index('court_id')
 
 # Translation files
 TRANSLATIONS_DIR = os.path.join('static', 'translations')
@@ -441,6 +446,18 @@ def get_courts_data():
         'current_language': session.get('language', DEFAULT_LANGUAGE)
     })
 
+# Route for health checking
+@app.route('/health')
+def health_check():
+    storage_info = {
+        'database_type': 'MongoDB Atlas',
+        'database_name': db.name,
+        'connected': mongo_client.server_info() is not None,
+        'courts_count': courts_collection.count_documents({}),
+        'environment': os.environ.get('FLASK_ENV', 'development')
+    }
+    return jsonify(storage_info)
+
 class QueueSystem:
     def __init__(self, court_id, court_name):
         self.court_id = court_id
@@ -461,7 +478,7 @@ class QueueSystem:
         self.history.append(state)
         
         # Persist data after state changes
-        court_system.save_to_json()
+        court_system.save_to_mongodb()
 
     def restore_state(self, index):
         """Restore queue state from history"""
@@ -478,7 +495,7 @@ class QueueSystem:
             self.update_estimated_waits()
             
             # Persist data after state changes
-            court_system.save_to_json()
+            court_system.save_to_mongodb()
             return True
         return False
 
@@ -541,7 +558,7 @@ class QueueSystem:
             self.update_estimated_waits()
             self.save_state(f"Shifted queue - Removed team: {removed_team['name']}")
             # Force save to JSON immediately to ensure persistence
-            court_system.save_to_json()
+            court_system.save_to_mongodb()
             return removed_team
         return None
 
@@ -550,7 +567,7 @@ class QueueSystem:
         if self.queue and self.queue[0]['time'] <= 0:
             self.shift_queue()
             # Force save to JSON immediately to ensure persistence
-            court_system.save_to_json()
+            court_system.save_to_mongodb()
 
     def update_estimated_waits(self):
         """Update the estimated wait times for all teams in the queue."""
@@ -591,7 +608,7 @@ class QueueSystem:
             self.update_estimated_waits()
             self.save_state(f"Deleted team: {deleted_team['name']}")
             # Force save to JSON immediately to ensure persistence
-            court_system.save_to_json()
+            court_system.save_to_mongodb()
             return deleted_team
         return None
         
@@ -618,13 +635,12 @@ class QueueSystem:
 class MultiCourtSystem:
     def __init__(self, court_names):
         self.courts = []
-        self.last_file_modification = 0
-        # Load data from JSON if exists, otherwise create new court systems
-        if os.path.exists(COURTS_DATA_FILE):
+        # Try to load courts from MongoDB
+        if courts_collection.count_documents({}) > 0:
             try:
-                self.load_from_json()
+                self.load_from_mongodb()
             except Exception as e:
-                print(f"Error loading court data: {e}")
+                print(f"Error loading court data from MongoDB: {e}")
                 self.create_new_courts(court_names)
         else:
             self.create_new_courts(court_names)
@@ -634,62 +650,64 @@ class MultiCourtSystem:
         self.courts = []
         for i, name in enumerate(court_names):
             self.courts.append(QueueSystem(i, name))
+        # Save new courts to MongoDB
+        self.save_to_mongodb()
     
     def check_for_file_updates(self):
-        """Check if the JSON file has been modified by another process and reload if needed"""
-        try:
-            if os.path.exists(COURTS_DATA_FILE):
-                current_mtime = os.path.getmtime(COURTS_DATA_FILE)
-                if current_mtime > self.last_file_modification:
-                    print(f"File modified externally, reloading from {COURTS_DATA_FILE}")
-                    self.load_from_json()
-                    return True
-        except Exception as e:
-            print(f"Error checking for file updates: {e}")
+        """Legacy method - MongoDB handles this automatically now"""
+        # No need to check for file updates with MongoDB
         return False
         
-    def save_to_json(self):
-        """Save court system state to JSON file"""
+    def save_to_mongodb(self):
+        """Save court system state to MongoDB"""
         try:
-            court_data = []
-            for court in self.courts:
-                court_data.append(court.to_dict())
-                
-            with open(COURTS_DATA_FILE, 'w') as f:
-                json.dump(court_data, f, indent=2)
-                
-            # Update the last modification time
-            self.last_file_modification = os.path.getmtime(COURTS_DATA_FILE)
-            print(f"Court data saved to {COURTS_DATA_FILE}")
-        except Exception as e:
-            print(f"Error saving court data: {e}")
+            # Clear existing court data
+            courts_collection.delete_many({})
             
-    def load_from_json(self):
-        """Load court system state from JSON file"""
+            # Insert new court data
+            for court in self.courts:
+                court_data = court.to_dict()
+                courts_collection.insert_one(court_data)
+            
+            print(f"Court data saved to MongoDB, collection: {courts_collection.name}")
+        except Exception as e:
+            print(f"Error saving court data to MongoDB: {e}")
+            
+    def save_to_json(self):
+        """Legacy method kept for backward compatibility - redirects to MongoDB save"""
+        self.save_to_mongodb()
+            
+    def load_from_mongodb(self):
+        """Load court system state from MongoDB"""
         try:
-            with open(COURTS_DATA_FILE, 'r') as f:
-                court_data = json.load(f)
-                
+            # Get all courts from MongoDB
+            court_data = list(courts_collection.find({}))
+            
             self.courts = []
             for data in court_data:
+                # Remove MongoDB _id field before creating QueueSystem
+                if '_id' in data:
+                    del data['_id']
                 self.courts.append(QueueSystem.from_dict(data))
-                
-            # Update the last modification time
-            self.last_file_modification = os.path.getmtime(COURTS_DATA_FILE)
-            print(f"Court data loaded from {COURTS_DATA_FILE}")
+            
+            print(f"Court data loaded from MongoDB, collection: {courts_collection.name}")
         except Exception as e:
-            print(f"Error loading court data: {e}")
+            print(f"Error loading court data from MongoDB: {e}")
             raise e
+            
+    def load_from_json(self):
+        """Legacy method kept for backward compatibility - redirects to MongoDB load"""
+        self.load_from_mongodb()
 
 # Initialize the multi-court system
 court_system = MultiCourtSystem(COURT_NAMES)
 
 # Save data periodically
 def periodic_save():
-    """Save court system state to JSON file periodically"""
+    """Save court system state to MongoDB periodically"""
     while True:
-        time.sleep(10)  # Save every 10 seconds instead of 30
-        court_system.save_to_json()
+        time.sleep(10)  # Save every 10 seconds
+        court_system.save_to_mongodb()
 
 # Start periodic save in a background thread
 periodic_save_thread = Thread(target=periodic_save)

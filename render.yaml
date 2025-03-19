@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: beachrank
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app -c gunicorn_config.py
+    envVars:
+      - key: MONGO_URI
+        sync: false 

@@ -1,1 +1,2 @@
 add techno music as background music
+bug quando ce solo una persona  all'interno della coda (che sta giocando)  e torni indietro nei courtrs oveerreview

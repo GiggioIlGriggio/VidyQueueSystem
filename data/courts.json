@@ -32,20 +32,7 @@
   {
     "court_id": 1,
     "court_name": "Court 2",
-    "queue": [
-      {
-        "name": "efwfwewfe",
-        "time": 890,
-        "estimated_wait": 900,
-        "start_timestamp": 1742236978.46713
-      },
-      {
-        "name": "sss",
-        "time": 0,
-        "estimated_wait": 890,
-        "start_timestamp": null
-      }
-    ],
+    "queue": [],
     "history": [
       {
         "timestamp": "2025-03-15T12:16:00.869022",
@@ -563,15 +550,15 @@
           },
           {
             "name": "efwfwewfe",
-            "time": 890,
+            "time": 560,
             "estimated_wait": 900,
             "start_timestamp": 1742236978.46713
           },
           {
             "name": "sss",
-            "time": 0,
-            "estimated_wait": 890,
-            "start_timestamp": null
+            "time": 900,
+            "estimated_wait": 560,
+            "start_timestamp": 1742237318.34721
           }
         ],
         "action": "Added team: sss"
@@ -587,15 +574,15 @@
           },
           {
             "name": "efwfwewfe",
-            "time": 890,
+            "time": 560,
             "estimated_wait": 900,
             "start_timestamp": 1742236978.46713
           },
           {
             "name": "sss",
-            "time": 0,
-            "estimated_wait": 890,
-            "start_timestamp": null
+            "time": 900,
+            "estimated_wait": 560,
+            "start_timestamp": 1742237318.34721
           }
         ],
         "action": "Shifted queue - Removed team: efewwefwefw"
@@ -605,18 +592,124 @@
         "queue": [
           {
             "name": "efwfwewfe",
-            "time": 890,
+            "time": 560,
             "estimated_wait": 900,
             "start_timestamp": 1742236978.46713
           },
           {
             "name": "sss",
-            "time": 0,
-            "estimated_wait": 890,
-            "start_timestamp": null
+            "time": 900,
+            "estimated_wait": 560,
+            "start_timestamp": 1742237318.34721
           }
         ],
         "action": "Shifted queue - Removed team: wefwefewfweefwf"
+      },
+      {
+        "timestamp": "2025-03-17T19:48:38.347210",
+        "queue": [
+          {
+            "name": "sss",
+            "time": 900,
+            "estimated_wait": 560,
+            "start_timestamp": 1742237318.34721
+          }
+        ],
+        "action": "Shifted queue - Removed team: efwfwewfe"
+      },
+      {
+        "timestamp": "2025-03-17T19:48:38.649061",
+        "queue": [],
+        "action": "Shifted queue - Removed team: sss"
+      },
+      {
+        "timestamp": "2025-03-18T16:20:02.692398",
+        "queue": [
+          {
+            "name": "sssss",
+            "time": 635,
+            "estimated_wait": 0,
+            "start_timestamp": 1742311202.692398
+          }
+        ],
+        "action": "Added team: sssss"
+      },
+      {
+        "timestamp": "2025-03-18T16:20:04.693744",
+        "queue": [
+          {
+            "name": "sssss",
+            "time": 635,
+            "estimated_wait": 0,
+            "start_timestamp": 1742311202.692398
+          },
+          {
+            "name": "asdasdasd",
+            "time": 0,
+            "estimated_wait": 635,
+            "start_timestamp": 1742311467.176243
+          }
+        ],
+        "action": "Added team: asdasdasd"
+      },
+      {
+        "timestamp": "2025-03-18T16:20:06.877544",
+        "queue": [
+          {
+            "name": "sssss",
+            "time": 635,
+            "estimated_wait": 0,
+            "start_timestamp": 1742311202.692398
+          },
+          {
+            "name": "asdasdasd",
+            "time": 0,
+            "estimated_wait": 635,
+            "start_timestamp": 1742311467.176243
+          },
+          {
+            "name": "dsdsddsdsd",
+            "time": 166,
+            "estimated_wait": 0,
+            "start_timestamp": 1742375358.021631
+          }
+        ],
+        "action": "Added team: dsdsddsdsd"
+      },
+      {
+        "timestamp": "2025-03-18T16:24:27.176243",
+        "queue": [
+          {
+            "name": "asdasdasd",
+            "time": 0,
+            "estimated_wait": 635,
+            "start_timestamp": 1742311467.176243
+          },
+          {
+            "name": "dsdsddsdsd",
+            "time": 166,
+            "estimated_wait": 0,
+            "start_timestamp": 1742375358.021631
+          }
+        ],
+        "action": "Shifted queue - Removed team: sssss"
+      },
+      {
+        "timestamp": "2025-03-19T10:09:18.021631",
+        "queue": [
+          {
+            "name": "dsdsddsdsd",
+            "time": 166,
+            "estimated_wait": 0,
+            "start_timestamp": 1742375358.021631
+          }
+        ],
+        "action": "Shifted queue - Removed team: asdasdasd"
+      },
+      {
+        "timestamp": "2025-03-19T10:21:31.970242",
+        "queue": [],
+        "action": "Deleted team: dsdsddsdsd"
       }
     ],
     "match_duration": 900
@@ -624,20 +717,7 @@
   {
     "court_id": 2,
     "court_name": "Court 3",
-    "queue": [
-      {
-        "name": "sasaasasas",
-        "time": 67,
-        "estimated_wait": 0,
-        "start_timestamp": 1742236155.198128
-      },
-      {
-        "name": "asasasasasasasas",
-        "time": 0,
-        "estimated_wait": 67,
-        "start_timestamp": null
-      }
-    ],
+    "queue": [],
     "history": [
       {
         "timestamp": "2025-03-17T13:43:57.921244",
@@ -975,6 +1055,23 @@
           }
         ],
         "action": "Shifted queue - Removed team: sasa"
+      },
+      {
+        "timestamp": "2025-03-17T19:44:14.935766",
+        "queue": [
+          {
+            "name": "asasasasasasasas",
+            "time": 0,
+            "estimated_wait": 0,
+            "start_timestamp": 1742237054.935766
+          }
+        ],
+        "action": "Shifted queue - Removed team: sasaasasas"
+      },
+      {
+        "timestamp": "2025-03-17T22:55:37.499844",
+        "queue": [],
+        "action": "Shifted queue - Removed team: asasasasasasasas"
       }
     ],
     "match_duration": 900
