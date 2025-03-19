@@ -6,4 +6,8 @@ services:
     startCommand: gunicorn app:app -c gunicorn_config.py
     envVars:
       - key: MONGO_URI
-        sync: false 
+        sync: false
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true 

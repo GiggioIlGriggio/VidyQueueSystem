@@ -13,12 +13,34 @@ app.secret_key = os.environ.get('SECRET_KEY', 'your-default-secret-key')  # More
 
 # MongoDB configuration
 MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
-mongo_client = MongoClient(MONGO_URI)
-db = mongo_client['beachrank']
-courts_collection = db['courts']
-
-# Ensure the courts collection has an index on court_id for faster lookups
-courts_collection.create_index('court_id')
+try:
+    # URL encode the password in the connection string if it contains special characters
+    if '@' in MONGO_URI:
+        # Split the URI into parts before and after the @ symbol
+        prefix, suffix = MONGO_URI.split('@', 1)
+        if ':' in prefix:
+            # Split the prefix into username and password
+            username, password = prefix.split(':', 1)
+            # URL encode the password
+            encoded_password = urllib.parse.quote_plus(password)
+            # Reconstruct the URI with encoded password
+            MONGO_URI = f"{username}:{encoded_password}@{suffix}"
+    
+    mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    # Test the connection
+    mongo_client.server_info()
+    print("Successfully connected to MongoDB")
+    
+    db = mongo_client['beachrank']
+    courts_collection = db['courts']
+    
+    # Ensure the courts collection has an index on court_id for faster lookups
+    courts_collection.create_index('court_id')
+except Exception as e:
+    print(f"Error connecting to MongoDB: {str(e)}")
+    print("Please check your MONGO_URI environment variable and ensure it's properly configured.")
+    print("Example format: mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority")
+    raise
 
 # Translation files
 TRANSLATIONS_DIR = os.path.join('static', 'translations')
