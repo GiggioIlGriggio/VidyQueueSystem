@@ -7,7 +7,11 @@ services:
     envVars:
       - key: MONGO_URI
         sync: false
+        # If you want to set it directly here (not recommended for security):
+        # value: mongodb+srv://user:YOUR_PASSWORD@clustersanndmatch.kvu15.mongodb.net/?retryWrites=true&w=majority&appName=ClusterSanndMatch
       - key: FLASK_ENV
         value: production
       - key: SECRET_KEY
-        generateValue: true 
+        generateValue: true
+      - key: ALLOW_ENV_DEBUG
+        value: 'true' # Set to 'false' when not debugging 

@@ -13,6 +13,27 @@ app.secret_key = os.environ.get('SECRET_KEY', 'your-default-secret-key')  # More
 
 # MongoDB configuration
 MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
+print(f"Loaded MONGO_URI from environment: '{MONGO_URI[:10]}...' (showing first 10 chars for security)")
+
+# Validate the MongoDB URI format
+if not MONGO_URI.startswith('mongodb://') and not MONGO_URI.startswith('mongodb+srv://'):
+    print(f"ERROR: Invalid MongoDB URI format: '{MONGO_URI[:10]}...' (showing first 10 chars for security)")
+    print("Environment variables available: ", list(os.environ.keys()))
+    print("The URI must begin with 'mongodb://' or 'mongodb+srv://'")
+    print("Please check your environment variables in the Render dashboard.")
+    
+    # Hard-code the MongoDB URI as a fallback for production
+    if os.environ.get('FLASK_ENV') == 'production':
+        print("Using hardcoded MongoDB URI as fallback")
+        # NOTE: You need to replace the YOUR_ACTUAL_PASSWORD placeholder with your real password
+        MONGO_URI = "mongodb+srv://user:YOUR_ACTUAL_PASSWORD@clustersanndmatch.kvu15.mongodb.net/?retryWrites=true&w=majority&appName=ClusterSanndMatch"
+        if MONGO_URI.find("YOUR_ACTUAL_PASSWORD") != -1:
+            print("WARNING: You need to edit app.py and replace YOUR_ACTUAL_PASSWORD with your real MongoDB password!")
+    else:
+        # Use a fallback for local development
+        print("Using fallback local MongoDB for development")
+        MONGO_URI = 'mongodb://localhost:27017/'
+
 try:
     # URL encode the password in the connection string if it contains special characters
     if '@' in MONGO_URI:
@@ -479,6 +500,27 @@ def health_check():
         'environment': os.environ.get('FLASK_ENV', 'development')
     }
     return jsonify(storage_info)
+
+# Route to check environment variables (for debugging)
+@app.route('/debug/env')
+@login_required
+def debug_env():
+    # Only show this in development or when explicitly allowed
+    if os.environ.get('FLASK_ENV') != 'production' or os.environ.get('ALLOW_ENV_DEBUG') == 'true':
+        env_dict = {}
+        for key, value in os.environ.items():
+            # Mask sensitive values
+            if any(sensitive in key.lower() for sensitive in ['pass', 'secret', 'key', 'token', 'auth']):
+                env_dict[key] = value[:3] + '****' if value else None
+            else:
+                env_dict[key] = value
+                
+        return jsonify({
+            'environment_variables': env_dict,
+            'mongo_uri_valid_format': MONGO_URI.startswith('mongodb://') or MONGO_URI.startswith('mongodb+srv://'),
+            'mongo_uri_prefix': MONGO_URI[:10] + '...' if MONGO_URI else None
+        })
+    return jsonify({'error': 'Debug endpoints are disabled in production'}), 403
 
 class QueueSystem:
     def __init__(self, court_id, court_name):
