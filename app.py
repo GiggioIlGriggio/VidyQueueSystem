@@ -260,6 +260,11 @@ def home():
     court_data = []
     for court_id in range(len(COURT_NAMES)):
         court = court_system.courts[court_id]
+        
+        # Force check for expired teams before displaying data
+        if court.queue and court.queue[0]['time'] <= 0:
+            court.check_and_shift_queue()
+            
         currently_playing = None
         waiting_count = 0
         
@@ -299,6 +304,11 @@ def view_court(court_id):
     
     if 0 <= court_id < len(COURT_NAMES):
         court = court_system.courts[court_id]
+        
+        # Force check for expired teams before displaying data
+        if court.queue and court.queue[0]['time'] <= 0:
+            court.check_and_shift_queue()
+            
         queue_data = [{'name': team['name'], 'time': team['time'], 'estimated_wait': team['estimated_wait']} 
                      for team in court.queue]
                      
@@ -382,6 +392,11 @@ def get_queue_data(court_id):
         
     if 0 <= court_id < len(COURT_NAMES):
         court = court_system.courts[court_id]
+        
+        # Force check for expired teams before returning data
+        if court.queue and court.queue[0]['time'] <= 0:
+            court.check_and_shift_queue()
+        
         queue_data = [{'name': team['name'], 'time': team['time'], 'estimated_wait': team['estimated_wait']} 
                      for team in court.queue]
                      
@@ -467,6 +482,11 @@ def get_courts_data():
     court_data = []
     for court_id in range(len(COURT_NAMES)):
         court = court_system.courts[court_id]
+        
+        # Force check for expired teams before returning data
+        if court.queue and court.queue[0]['time'] <= 0:
+            court.check_and_shift_queue()
+        
         currently_playing = None
         waiting_count = 0
         
@@ -572,6 +592,40 @@ class QueueSystem:
         # Persist data after state changes
         court_system.save_to_mongodb()
 
+    def is_same_day(self, timestamp_str):
+        """Check if the timestamp is from the same day as today"""
+        if not timestamp_str:
+            return False
+        
+        # Parse the ISO format timestamp
+        timestamp_date = datetime.fromisoformat(timestamp_str).date()
+        today = datetime.now().date()
+        
+        return timestamp_date == today
+        
+    def filter_history_for_today(self):
+        """Filter the history to keep only entries from today"""
+        if not self.history:
+            return
+            
+        today_history = []
+        for entry in self.history:
+            if self.is_same_day(entry.get('timestamp')):
+                today_history.append(entry)
+                
+        # If we have entries from today, keep them; otherwise keep the history as is
+        if today_history:
+            self.history = today_history
+        
+        # If this causes the history to be empty when it wasn't before, add a reset note
+        if not self.history:
+            reset_state = {
+                'timestamp': datetime.now().isoformat(),
+                'queue': [],
+                'action': "Daily reset - History cleared for new day"
+            }
+            self.history.append(reset_state)
+
     def restore_state(self, index):
         """Restore queue state from history"""
         if 0 <= index < len(self.history):
@@ -657,9 +711,12 @@ class QueueSystem:
     def check_and_shift_queue(self):
         """Check the first team's time and shift the queue if necessary."""
         if self.queue and self.queue[0]['time'] <= 0:
+            print(f"Automatically shifting queue for court {self.court_id} - Team {self.queue[0]['name']} time expired")
             self.shift_queue()
             # Force save to JSON immediately to ensure persistence
             court_system.save_to_mongodb()
+            return True
+        return False
 
     def update_estimated_waits(self):
         """Update the estimated wait times for all teams in the queue."""
@@ -686,7 +743,10 @@ class QueueSystem:
                     self.queue[0]['time'] -= 1
                     
                 self.update_estimated_waits()  # Update wait times
-                self.check_and_shift_queue()
+                
+                # If time has reached 0, immediately shift the queue
+                if self.queue[0]['time'] <= 0:
+                    self.check_and_shift_queue()
             time.sleep(1)
 
     def stop_timer(self):
@@ -727,6 +787,7 @@ class QueueSystem:
 class MultiCourtSystem:
     def __init__(self, court_names):
         self.courts = []
+        self.last_day_checked = datetime.now().day
         # Try to load courts from MongoDB
         if courts_collection.count_documents({}) > 0:
             try:
@@ -750,15 +811,48 @@ class MultiCourtSystem:
         # No need to check for file updates with MongoDB
         return False
         
+    def check_for_day_change(self):
+        """Check if the day has changed and reset history if needed"""
+        current_day = datetime.now().day
+        
+        if current_day != self.last_day_checked:
+            print(f"Day changed from {self.last_day_checked} to {current_day}. Resetting history...")
+            # The day has changed, filter history to keep only today's entries
+            for court in self.courts:
+                court.filter_history_for_today()
+                
+            # Save the changes to MongoDB
+            self.save_to_mongodb()
+            
+            # Update the last day checked
+            self.last_day_checked = current_day
+            return True
+            
+        return False
+        
     def save_to_mongodb(self):
         """Save court system state to MongoDB"""
         try:
+            # Save metadata first
+            metadata = {
+                'last_day_checked': self.last_day_checked,
+                'type': 'metadata'
+            }
+            
             # Clear existing court data
-            courts_collection.delete_many({})
+            courts_collection.delete_many({'type': {'$ne': 'metadata'}})
+            
+            # Update or insert metadata
+            courts_collection.update_one(
+                {'type': 'metadata'}, 
+                {'$set': metadata},
+                upsert=True
+            )
             
             # Insert new court data
             for court in self.courts:
                 court_data = court.to_dict()
+                court_data['type'] = 'court'  # Mark it as court data
                 courts_collection.insert_one(court_data)
             
             print(f"Court data saved to MongoDB, collection: {courts_collection.name}")
@@ -772,17 +866,27 @@ class MultiCourtSystem:
     def load_from_mongodb(self):
         """Load court system state from MongoDB"""
         try:
+            # Get metadata first
+            metadata = courts_collection.find_one({'type': 'metadata'})
+            if metadata:
+                self.last_day_checked = metadata.get('last_day_checked', datetime.now().day)
+                
             # Get all courts from MongoDB
-            court_data = list(courts_collection.find({}))
+            court_data = list(courts_collection.find({'type': 'court'}))
             
             self.courts = []
             for data in court_data:
-                # Remove MongoDB _id field before creating QueueSystem
+                # Remove MongoDB _id field and type field before creating QueueSystem
                 if '_id' in data:
                     del data['_id']
+                if 'type' in data:
+                    del data['type']
                 self.courts.append(QueueSystem.from_dict(data))
             
             print(f"Court data loaded from MongoDB, collection: {courts_collection.name}")
+            
+            # Check if we need to reset for a new day immediately
+            self.check_for_day_change()
         except Exception as e:
             print(f"Error loading court data from MongoDB: {e}")
             raise e
@@ -794,17 +898,32 @@ class MultiCourtSystem:
 # Initialize the multi-court system
 court_system = MultiCourtSystem(COURT_NAMES)
 
+# Periodic maintenance functions
+def check_day_change():
+    """Check if the day has changed and reset history if needed"""
+    while True:
+        # Check every hour for day change
+        time.sleep(3600)  # 1 hour in seconds
+        court_system.check_for_day_change()
+
 # Save data periodically
 def periodic_save():
     """Save court system state to MongoDB periodically"""
     while True:
         time.sleep(10)  # Save every 10 seconds
         court_system.save_to_mongodb()
+        # Also check for day change every 10 minutes
+        court_system.check_for_day_change()
 
 # Start periodic save in a background thread
 periodic_save_thread = Thread(target=periodic_save)
 periodic_save_thread.daemon = True
 periodic_save_thread.start()
+
+# Start day change check in a background thread
+day_change_thread = Thread(target=check_day_change)
+day_change_thread.daemon = True
+day_change_thread.start()
 
 if __name__ == '__main__':
     print(f"Server running! Access locally at: http://127.0.0.1:5000")
