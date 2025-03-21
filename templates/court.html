@@ -213,10 +213,15 @@
                     if (currentTeam.start_timestamp) {
                         // Calculate elapsed time since the team started playing
                         const clientElapsed = clientCurrentTime - clientStartTime; // Time elapsed on client
+                        
+                        // Use server_time if available, otherwise use clientStartTime
                         const serverTimeAtLoad = currentTeam.server_time || clientStartTime; // When the data was loaded
                         
-                        // Current elapsed time is the original elapsed time plus time spent on the page
+                        // Calculate total elapsed time accounting for time already passed on server
+                        // plus time spent on client since page load
                         const totalElapsed = (serverTimeAtLoad - currentTeam.start_timestamp) + clientElapsed;
+                        
+                        // Update current team's time with the calculated remaining time
                         currentTeam.time = Math.max(0, Math.floor(MATCH_DURATION - totalElapsed));
                         
                         // If the team has expired, remove it immediately
@@ -458,11 +463,29 @@
                             // Keep track of when we received this data for time calculations
                             clientStartTime = Date.now() / 1000;
                             
-                            // If the same team is still playing, keep using our locally calculated time
-                            // to avoid jumps due to network delays
+                            // Store the server time with each team for accurate time calculation
+                            validQueue.forEach(team => {
+                                // Ensure server_time is always present for time calculations
+                                if (!team.server_time) {
+                                    team.server_time = data.server_time || clientStartTime;
+                                }
+                            });
+                            
+                            // If the same team is still playing, use a hybrid approach:
+                            // Keep our local time calculation but update the server reference time
                             if (queueData.length > 0 && queueData[0].name === validQueue[0].name) {
+                                // Update server time reference but keep locally calculated time
                                 const currentTime = queueData[0].time;
                                 validQueue[0].time = currentTime;
+                                validQueue[0].server_time = data.server_time || clientStartTime;
+                            } else {
+                                // For new teams, ensure we calculate initial time correctly
+                                const team = validQueue[0];
+                                if (team.start_timestamp) {
+                                    const serverTime = data.server_time || clientStartTime;
+                                    const elapsed = serverTime - team.start_timestamp;
+                                    team.time = Math.max(0, Math.floor(MATCH_DURATION - elapsed));
+                                }
                             }
                         }
                         
@@ -486,6 +509,9 @@
 
             // Start the timer to update times every second
             localTimer = setInterval(updateQueueTimes, 1000);
+            
+            // Run updateQueueTimes immediately to show correct time on page load
+            updateQueueTimes();
             
             // Fetch fresh data from server every 10 seconds instead of 5
             setInterval(fetchQueueData, 10000);

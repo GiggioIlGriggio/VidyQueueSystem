@@ -391,6 +391,9 @@ def get_queue_data(court_id):
     # Check for updates to the file from other processes
     court_system.check_for_file_updates()
     
+    # Get current server time for time synchronization
+    server_time = datetime.now().timestamp()
+    
     # Get translations for JavaScript usage
     translations_for_js = {
         'playing': get_text('court.playing'),
@@ -401,7 +404,8 @@ def get_queue_data(court_id):
     
     # Default response for invalid court_id
     default_response = {
-        'queue': [], 
+        'queue': [],
+        'server_time': server_time,
         'current_language': session.get('language', DEFAULT_LANGUAGE),
         'translations': translations_for_js
     }
@@ -419,16 +423,18 @@ def get_queue_data(court_id):
         # Add start timestamp for the first team if available
         if queue_data and len(court.queue) > 0 and 'start_timestamp' in court.queue[0] and court.queue[0]['start_timestamp']:
             queue_data[0]['start_timestamp'] = court.queue[0]['start_timestamp']
-            # Add server current timestamp for time synchronization
-            queue_data[0]['server_time'] = datetime.now().timestamp()
+            # Add server current timestamp for each team for time synchronization
+            for team in queue_data:
+                team['server_time'] = server_time
             
         for team in queue_data:
             team['time_str'] = f"{team['time'] // 60}:{team['time'] % 60:02d}"
             team['wait_str'] = f"{team['estimated_wait'] // 60}:{team['estimated_wait'] % 60:02d}"
         
-        # Include current language and translations in response
+        # Include current language, server time, and translations in response
         response_data = {
             'queue': queue_data,
+            'server_time': server_time,
             'current_language': session.get('language', DEFAULT_LANGUAGE),
             'translations': translations_for_js
         }
