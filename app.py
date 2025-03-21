@@ -194,6 +194,7 @@ def admin_dashboard():
         # Redirect to include the language parameter in URL
         return redirect(url_for_with_lang('admin_dashboard'))
     
+    # Courts should always be initialized correctly
     court_data = []
     for court_id in range(len(COURT_NAMES)):
         queue = court_system.courts[court_id].queue
@@ -256,7 +257,7 @@ def home():
     
     # Check for updates to the file from other processes
     court_system.check_for_file_updates()
-        
+    
     court_data = []
     for court_id in range(len(COURT_NAMES)):
         court = court_system.courts[court_id]
@@ -389,6 +390,21 @@ def get_queue_data(court_id):
     
     # Check for updates to the file from other processes
     court_system.check_for_file_updates()
+    
+    # Get translations for JavaScript usage
+    translations_for_js = {
+        'playing': get_text('court.playing'),
+        'waiting': get_text('court.waiting'),
+        'wait': get_text('court.wait'),
+        'none_playing': get_text('court.none_playing')
+    }
+    
+    # Default response for invalid court_id
+    default_response = {
+        'queue': [], 
+        'current_language': session.get('language', DEFAULT_LANGUAGE),
+        'translations': translations_for_js
+    }
         
     if 0 <= court_id < len(COURT_NAMES):
         court = court_system.courts[court_id]
@@ -410,14 +426,6 @@ def get_queue_data(court_id):
             team['time_str'] = f"{team['time'] // 60}:{team['time'] % 60:02d}"
             team['wait_str'] = f"{team['estimated_wait'] // 60}:{team['estimated_wait'] % 60:02d}"
         
-        # Get translations for JavaScript usage
-        translations_for_js = {
-            'playing': get_text('court.playing'),
-            'waiting': get_text('court.waiting'),
-            'wait': get_text('court.wait'),
-            'none_playing': get_text('court.none_playing')
-        }
-        
         # Include current language and translations in response
         response_data = {
             'queue': queue_data,
@@ -426,16 +434,7 @@ def get_queue_data(court_id):
         }
         return jsonify(response_data)
     
-    return jsonify({
-        'queue': [], 
-        'current_language': session.get('language', DEFAULT_LANGUAGE),
-        'translations': {
-            'playing': get_text('court.playing'),
-            'waiting': get_text('court.waiting'),
-            'wait': get_text('court.wait'),
-            'none_playing': get_text('court.none_playing')
-        }
-    })
+    return jsonify(default_response)
 
 # Route to delete a team from a specific court
 @app.route('/delete_team/<int:court_id>/<int:index>', methods=['POST'])
@@ -478,7 +477,7 @@ def get_courts_data():
     
     # Check for updates to the file from other processes
     court_system.check_for_file_updates()
-        
+    
     court_data = []
     for court_id in range(len(COURT_NAMES)):
         court = court_system.courts[court_id]
@@ -788,18 +787,47 @@ class MultiCourtSystem:
     def __init__(self, court_names):
         self.courts = []
         self.last_day_checked = datetime.now().day
-        # Try to load courts from MongoDB
-        if courts_collection.count_documents({}) > 0:
-            try:
-                self.load_from_mongodb()
-            except Exception as e:
-                print(f"Error loading court data from MongoDB: {e}")
-                self.create_new_courts(court_names)
-        else:
+        
+        # Always ensure we have exactly 4 courts
+        try:
+            self.load_from_mongodb()
+            # Verify we have exactly 4 courts with correct ids
+            self.validate_courts(court_names)
+        except Exception as e:
+            print(f"Error loading court data from MongoDB: {e}")
+            self.create_new_courts(court_names)
+            
+    def validate_courts(self, court_names):
+        """Ensure we have exactly 4 courts with the correct IDs and names"""
+        # First check if we have all 4 courts
+        if len(self.courts) != len(court_names):
+            print(f"Invalid court count: {len(self.courts)}, recreating all courts")
+            self.create_new_courts(court_names)
+            return
+            
+        # Verify each court has the correct ID and name
+        recreate_needed = False
+        for i, name in enumerate(court_names):
+            valid_court = False
+            for court in self.courts:
+                if court.court_id == i:
+                    if court.court_name != name:
+                        print(f"Court {i} has wrong name: {court.court_name}, should be {name}")
+                        recreate_needed = True
+                    valid_court = True
+                    break
+            
+            if not valid_court:
+                print(f"Missing court with ID {i}")
+                recreate_needed = True
+                
+        # If any issues were found, recreate all courts
+        if recreate_needed:
             self.create_new_courts(court_names)
             
     def create_new_courts(self, court_names):
         """Create new court systems with the given names"""
+        print("Creating new courts with fixed configuration")
         self.courts = []
         for i, name in enumerate(court_names):
             self.courts.append(QueueSystem(i, name))
