@@ -95,6 +95,27 @@
             const tutorialContent = document.querySelector('.tutorial-content');
             const expandIcon = document.querySelector('.expand-icon');
             
+            // Add stylesheet with animation-prevention class
+            const style = document.createElement('style');
+            style.textContent = `
+                .no-animation {
+                    animation: none !important;
+                    transition: none !important;
+                }
+                
+                @keyframes none {
+                    0% { opacity: 1; }
+                    100% { opacity: 1; }
+                }
+                
+                /* Ensure the auto-refresh doesn't trigger animations */
+                body.auto-refreshing * {
+                    animation-play-state: paused !important;
+                    transition: none !important;
+                }
+            `;
+            document.head.appendChild(style);
+            
             // Toggle the Quick Guide when clicking on the header
             tutorialHeader.addEventListener('click', function() {
                 tutorialContent.classList.toggle('expanded');
@@ -115,6 +136,7 @@
                 // Don't refresh if user is interacting with the page
                 let userActive = false;
                 let lastData = null;
+                let isAutoRefresh = false;
                 
                 // Detect user interaction
                 document.addEventListener('mousemove', () => { userActive = true; });
@@ -124,9 +146,30 @@
                 // Reset after 2 seconds of inactivity
                 setInterval(() => { userActive = false; }, 2000);
                 
+                // Add observer to prevent automatic animation triggers
+                const observer = new MutationObserver((mutations) => {
+                    if (isAutoRefresh) {
+                        document.body.classList.add('auto-refreshing');
+                        setTimeout(() => {
+                            document.body.classList.remove('auto-refreshing');
+                        }, 100);
+                    }
+                });
+                
+                // Observe the courts grid for changes
+                observer.observe(document.querySelector('.courts-grid'), { 
+                    childList: true, 
+                    subtree: true,
+                    attributes: true,
+                    characterData: true
+                });
+                
                 // Refresh every 30 seconds instead of 15 seconds if user is not active
                 setInterval(() => {
                     if (!userActive) {
+                        // Set auto-refresh flag before making request
+                        isAutoRefresh = true;
+                        
                         // Fetch the updated data from the API endpoint
                         fetch('/courts_data?lang={{ current_language() }}', {
                             headers: {
@@ -139,9 +182,10 @@
                             if (data.court_data) {
                                 // Check if data has actually changed before updating DOM
                                 const dataChanged = !lastData || 
-                                                   JSON.stringify(data.court_data) !== JSON.stringify(lastData);
+                                                 JSON.stringify(data.court_data) !== JSON.stringify(lastData);
                                 
                                 if (dataChanged) {
+                                    document.body.classList.add('auto-refreshing');
                                     lastData = JSON.parse(JSON.stringify(data.court_data));
                                     
                                     // Update each court card with fresh data
@@ -189,11 +233,20 @@
                                             }
                                         }
                                     });
+                                    
+                                    // After DOM updates, remove the auto-refreshing class
+                                    setTimeout(() => {
+                                        document.body.classList.remove('auto-refreshing');
+                                        isAutoRefresh = false;
+                                    }, 100);
+                                } else {
+                                    isAutoRefresh = false;
                                 }
                             }
                         })
                         .catch(error => {
                             console.error('Error refreshing court data:', error);
+                            isAutoRefresh = false;
                         });
                     }
                 }, 30000); // 30 seconds instead of 15

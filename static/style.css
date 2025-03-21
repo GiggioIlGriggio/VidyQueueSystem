@@ -1755,4 +1755,43 @@ li:hover .delete-btn {
 .tutorial-header:hover .click-hint {
     opacity: 1;
     transform: translateX(0);
+}
+
+/* Animation Control Classes */
+.no-animation {
+    animation: none !important;
+    transition: none !important;
+}
+
+body.auto-refreshing * {
+    animation-play-state: paused !important;
+    transition: none !important;
+}
+
+/* Override specific animations when auto-refreshing */
+body.auto-refreshing .progress-bar {
+    transition: none !important;
+}
+
+body.auto-refreshing .fa-hourglass-half,
+body.auto-refreshing .fa-clock,
+body.auto-refreshing .fa-users,
+body.auto-refreshing .fa-times,
+body.auto-refreshing .fa-check-circle,
+body.auto-refreshing .fa-umbrella-beach,
+body.auto-refreshing .fa-volleyball-ball,
+body.auto-refreshing .fa-sun,
+body.auto-refreshing .fa-water {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+}
+
+/* Fix for specific animation issues */
+body.auto-refreshing .waiting-time-display,
+body.auto-refreshing .court-available,
+body.auto-refreshing .queue-visual-indicator {
+    transition: none !important;
+    animation: none !important;
+    opacity: 1 !important;
 } 

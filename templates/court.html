@@ -177,6 +177,7 @@
             let isAnimating = false;
             let localTimer = null;
             let clientStartTime = Date.now() / 1000; // Current client timestamp in seconds
+            let isAutoRefresh = false; // Flag to track if update is from auto-refresh
             
             // Store translations for use in JavaScript
             const translations = {{ translations_js|tojson }};
@@ -306,8 +307,8 @@
                         listItem = document.createElement('li');
                         listItem.className = 'court-specific';
                         
-                        // Only add animation class if this is a new team (not from server sync)
-                        if (queueData.length > 1 && index === queueData.length - 1) {
+                        // Only add animation class for new entries if NOT an auto-refresh
+                        if (!isAutoRefresh && queueData.length > 1 && index === queueData.length - 1) {
                             listItem.classList.add('new-team');
                         }
                         
@@ -398,6 +399,9 @@
                     fetchUrl += '?lang=' + currentLang;
                 }
                 
+                // Set auto-refresh flag to true before fetch
+                isAutoRefresh = true;
+                
                 fetch(fetchUrl)
                     .then(response => response.json())
                     .then(data => {
@@ -468,9 +472,15 @@
                         
                         // Update the UI
                         updateQueueList();
+                        
+                        // Reset auto-refresh flag after a short delay to allow DOM to complete updates
+                        setTimeout(() => {
+                            isAutoRefresh = false;
+                        }, 50);
                     })
                     .catch(error => {
                         console.error('Error fetching queue data:', error);
+                        isAutoRefresh = false;
                     });
             }
 
@@ -482,6 +492,44 @@
             
             // Initial fetch to start with updated data
             fetchQueueData();
+
+            // Add stylesheet with animation-prevention class
+            const style = document.createElement('style');
+            style.textContent = `
+                .no-animation {
+                    animation: none !important;
+                    transition: none !important;
+                }
+                
+                @keyframes none {
+                    0% { opacity: 1; }
+                    100% { opacity: 1; }
+                }
+                
+                /* Ensure the auto-refresh doesn't trigger entry animations */
+                body.auto-refreshing * {
+                    animation-play-state: paused !important;
+                    transition: none !important;
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Add observer to prevent automatic animation triggers
+            const observer = new MutationObserver((mutations) => {
+                if (isAutoRefresh) {
+                    document.body.classList.add('auto-refreshing');
+                    setTimeout(() => {
+                        document.body.classList.remove('auto-refreshing');
+                    }, 100);
+                }
+            });
+            
+            observer.observe(document.querySelector('ul.court-specific-list'), { 
+                childList: true, 
+                subtree: true,
+                attributes: true,
+                characterData: true
+            });
         });
 
         function changeLanguage(lang) {
