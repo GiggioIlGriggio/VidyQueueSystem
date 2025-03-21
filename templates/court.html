@@ -302,48 +302,75 @@
                     const percentage = isPlaying ? (team.time / MATCH_DURATION) * 100 : 0;
 
                     if (!listItem || listItem === registerTeamItem) {
+                        // Create a new item if it doesn't exist
                         listItem = document.createElement('li');
                         listItem.className = 'court-specific';
+                        
                         // Only add animation class if this is a new team (not from server sync)
                         if (queueData.length > 1 && index === queueData.length - 1) {
                             listItem.classList.add('new-team');
                         }
+                        
+                        // Pre-create the full HTML structure to prevent icons from appearing/disappearing
                         listItem.innerHTML = `
                             <div class="team-info">
                                 <span class="team-name"><i class="fas fa-users"></i> ${team.name}</span>
                                 <span class="team-status">${isPlaying ? translations.playing : translations.waiting}</span>
                                 <span class="team-time"><i class="fas fa-clock"></i> ${isPlaying ? `${Math.floor(team.time / 60)}:${(team.time % 60).toString().padStart(2, '0')}` : '--:--'}</span>
-                                ${!isPlaying ? `<span class="team-wait"><i class="fas fa-hourglass-half"></i> ${translations.wait}: ${Math.floor(team.estimated_wait / 60)}:${(team.estimated_wait % 60).toString().padStart(2, '0')}</span>` : ''}
+                                <span class="team-wait" ${isPlaying ? 'style="display:none;"' : ''}><i class="fas fa-hourglass-half"></i> ${translations.wait}: ${Math.floor(team.estimated_wait / 60)}:${(team.estimated_wait % 60).toString().padStart(2, '0')}</span>
                                 <button class="delete-btn" aria-label="Delete team"><i class="fas fa-times"></i></button>
                             </div>
                             <div class="progress-container">
                                 <div class="progress-bar" style="width: ${percentage}%"></div>
                             </div>
                         `;
+                        
                         if (registerTeamItem) {
                             queueList.insertBefore(listItem, registerTeamItem);
                         } else {
                             queueList.appendChild(listItem);
                         }
                     } else {
+                        // Update existing item values without recreating the HTML structure
                         const timeSpan = listItem.querySelector('.team-time');
                         const progressBar = listItem.querySelector('.progress-bar');
                         const statusSpan = listItem.querySelector('.team-status');
                         const waitSpan = listItem.querySelector('.team-wait');
                         
                         if (timeSpan) {
-                            timeSpan.textContent = isPlaying ? 
+                            const newTime = isPlaying ? 
                                 `${Math.floor(team.time / 60)}:${(team.time % 60).toString().padStart(2, '0')}` : 
                                 '--:--';
+                            if (timeSpan.textContent.trim() !== newTime) {
+                                timeSpan.innerHTML = `<i class="fas fa-clock"></i> ${newTime}`;
+                            }
                         }
+                        
                         if (progressBar) {
-                            progressBar.style.width = `${percentage}%`;
+                            const currentWidth = progressBar.style.width;
+                            const newWidth = `${percentage}%`;
+                            if (currentWidth !== newWidth) {
+                                progressBar.style.width = newWidth;
+                            }
                         }
+                        
                         if (statusSpan) {
-                            statusSpan.textContent = isPlaying ? translations.playing : translations.waiting;
+                            const newStatus = isPlaying ? translations.playing : translations.waiting;
+                            if (statusSpan.textContent !== newStatus) {
+                                statusSpan.textContent = newStatus;
+                            }
                         }
+                        
                         if (waitSpan) {
-                            waitSpan.textContent = `${translations.wait}: ${Math.floor(team.estimated_wait / 60)}:${(team.estimated_wait % 60).toString().padStart(2, '0')}`;
+                            // Show/hide the wait span based on isPlaying
+                            waitSpan.style.display = isPlaying ? 'none' : 'inline-block';
+                            
+                            if (!isPlaying) {
+                                const newTime = `${translations.wait}: ${Math.floor(team.estimated_wait / 60)}:${(team.estimated_wait % 60).toString().padStart(2, '0')}`;
+                                if (!waitSpan.textContent.includes(newTime)) {
+                                    waitSpan.innerHTML = `<i class="fas fa-hourglass-half"></i> ${newTime}`;
+                                }
+                            }
                         }
                     }
                 });
@@ -391,6 +418,29 @@
                         // Get the queue data from the response
                         const fetchedQueue = data.queue || [];
                         
+                        // If nothing changed, don't update the DOM
+                        const currentQueueData = JSON.stringify(queueData.map(item => {
+                            return {
+                                name: item.name,
+                                start_timestamp: item.start_timestamp,
+                                estimated_wait: item.estimated_wait
+                            };
+                        }));
+                        
+                        const newQueueData = JSON.stringify(fetchedQueue.map(item => {
+                            return {
+                                name: item.name,
+                                start_timestamp: item.start_timestamp,
+                                estimated_wait: item.estimated_wait
+                            };
+                        }));
+                        
+                        // If the data is identical (ignoring constantly changing time values),
+                        // don't update the DOM to prevent visual flickering
+                        if (currentQueueData === newQueueData) {
+                            return;
+                        }
+                        
                         // Clean up expired teams from fetched data
                         const currentTime = Date.now() / 1000;
                         const validQueue = fetchedQueue.filter(team => {
@@ -427,8 +477,8 @@
             // Start the timer to update times every second
             localTimer = setInterval(updateQueueTimes, 1000);
             
-            // Fetch fresh data from server every 5 seconds instead of 10
-            setInterval(fetchQueueData, 5000);
+            // Fetch fresh data from server every 10 seconds instead of 5
+            setInterval(fetchQueueData, 10000);
             
             // Initial fetch to start with updated data
             fetchQueueData();
@@ -445,11 +495,9 @@
             // Set the lang parameter
             url.searchParams.set('lang', lang);
             
-            // Instead of just updating the URL, explicitly reload the page
+            // Navigate to the URL with the updated language parameter
+            // No need to call window.location.reload() - the redirect will load the page
             window.location.href = url.toString();
-            
-            // Force a full page reload to ensure all content is updated with the new language
-            window.location.reload(true);
         }
     </script>
 </body>

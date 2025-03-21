@@ -114,6 +114,7 @@
             function setupRefreshTimer() {
                 // Don't refresh if user is interacting with the page
                 let userActive = false;
+                let lastData = null;
                 
                 // Detect user interaction
                 document.addEventListener('mousemove', () => { userActive = true; });
@@ -123,7 +124,7 @@
                 // Reset after 2 seconds of inactivity
                 setInterval(() => { userActive = false; }, 2000);
                 
-                // Refresh every 15 seconds if user is not active
+                // Refresh every 30 seconds instead of 15 seconds if user is not active
                 setInterval(() => {
                     if (!userActive) {
                         // Fetch the updated data from the API endpoint
@@ -136,50 +137,66 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.court_data) {
-                                // Update each court card with fresh data
-                                data.court_data.forEach(court => {
-                                    const courtCard = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .waiting-teams-count .count-number`);
-                                    if (courtCard) {
-                                        courtCard.textContent = court.waiting_count;
-                                    }
+                                // Check if data has actually changed before updating DOM
+                                const dataChanged = !lastData || 
+                                                   JSON.stringify(data.court_data) !== JSON.stringify(lastData);
+                                
+                                if (dataChanged) {
+                                    lastData = JSON.parse(JSON.stringify(data.court_data));
                                     
-                                    // Update the waiting time display
-                                    const waitingTimeDisplay = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .waiting-time-display .time-value`);
-                                    if (waitingTimeDisplay && court.waiting_count > 0) {
-                                        waitingTimeDisplay.textContent = `${Math.floor(court.waiting_count * 15 / 60)}h ${(court.waiting_count * 15) % 60}m`;
-                                    }
-                                    
-                                    // Update the queue visual indicator
-                                    const queueBar = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .queue-bar`);
-                                    if (queueBar) {
-                                        const widthPercentage = Math.min(court.waiting_count * 20, 100);
-                                        queueBar.style.width = `${widthPercentage}%`;
-                                    }
-                                    
-                                    // Toggle between available and waiting time display
-                                    const courtAvailable = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .court-available`);
-                                    const waitingTimeElement = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .waiting-time-display`);
-                                    const queueVisualIndicator = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .queue-visual-indicator`);
-                                    
-                                    if (courtAvailable && waitingTimeElement && queueVisualIndicator) {
-                                        if (court.waiting_count > 0) {
-                                            courtAvailable.style.display = 'none';
-                                            waitingTimeElement.style.display = 'flex';
-                                            queueVisualIndicator.style.display = 'block';
-                                        } else {
-                                            courtAvailable.style.display = 'flex';
-                                            waitingTimeElement.style.display = 'none';
-                                            queueVisualIndicator.style.display = 'none';
+                                    // Update each court card with fresh data
+                                    data.court_data.forEach(court => {
+                                        const courtCard = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .waiting-teams-count .count-number`);
+                                        if (courtCard && courtCard.textContent != court.waiting_count) {
+                                            courtCard.textContent = court.waiting_count;
                                         }
-                                    }
-                                });
+                                        
+                                        // Update the waiting time display
+                                        const waitingTimeDisplay = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .waiting-time-display .time-value`);
+                                        const timeText = `${Math.floor(court.waiting_count * 15 / 60)}h ${(court.waiting_count * 15) % 60}m`;
+                                        if (waitingTimeDisplay && court.waiting_count > 0 && waitingTimeDisplay.textContent !== timeText) {
+                                            waitingTimeDisplay.textContent = timeText;
+                                        }
+                                        
+                                        // Update the queue visual indicator
+                                        const queueBar = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .queue-bar`);
+                                        if (queueBar) {
+                                            const widthPercentage = Math.min(court.waiting_count * 20, 100);
+                                            const currentWidth = queueBar.style.width;
+                                            if (currentWidth !== `${widthPercentage}%`) {
+                                                queueBar.style.width = `${widthPercentage}%`;
+                                            }
+                                        }
+                                        
+                                        // Toggle between available and waiting time display
+                                        const courtAvailable = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .court-available`);
+                                        const waitingTimeElement = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .waiting-time-display`);
+                                        const queueVisualIndicator = document.querySelector(`.court-card-link[href="/court/${court.id}?lang={{ current_language() }}"] .queue-visual-indicator`);
+                                        
+                                        if (courtAvailable && waitingTimeElement && queueVisualIndicator) {
+                                            if (court.waiting_count > 0) {
+                                                if (courtAvailable.style.display !== 'none') {
+                                                    courtAvailable.style.display = 'none';
+                                                    waitingTimeElement.style.display = 'flex';
+                                                    queueVisualIndicator.style.display = 'block';
+                                                }
+                                            } else {
+                                                if (courtAvailable.style.display !== 'flex') {
+                                                    courtAvailable.style.display = 'flex';
+                                                    waitingTimeElement.style.display = 'none';
+                                                    queueVisualIndicator.style.display = 'none';
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
                             }
                         })
                         .catch(error => {
                             console.error('Error refreshing court data:', error);
                         });
                     }
-                }, 15000); // 15 seconds
+                }, 30000); // 30 seconds instead of 15
             }
             
             // Start the refresh timer
@@ -197,11 +214,9 @@
             // Set the lang parameter
             url.searchParams.set('lang', lang);
             
-            // Instead of just updating the URL, explicitly reload the page
+            // Navigate to the URL with the updated language parameter
+            // No need to call window.location.reload() - the redirect will load the page
             window.location.href = url.toString();
-            
-            // Force a full page reload to ensure all content is updated with the new language
-            window.location.reload(true);
         }
     </script>
 </body>
