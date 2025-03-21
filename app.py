@@ -237,8 +237,24 @@ def admin_history(court_id):
 @login_required
 def restore_queue(court_id, index):
     if 0 <= court_id < len(COURT_NAMES) and 0 <= index < len(court_system.courts[court_id].history):
-        court_system.courts[court_id].restore_state(index)
-        return jsonify({'success': True})
+        try:
+            # Attempt to restore the state
+            if court_system.courts[court_id].restore_state(index):
+                # Force an immediate save to ensure persistence
+                court_system.save_to_mongodb()
+                
+                # Return success with queue information
+                return jsonify({
+                    'success': True,
+                    'message': f'Queue restored successfully for {COURT_NAMES[court_id]}',
+                    'court_id': court_id,
+                    'court_name': COURT_NAMES[court_id],
+                    'queue_size': len(court_system.courts[court_id].queue)
+                })
+            else:
+                return jsonify({'success': False, 'error': 'Failed to restore state'})
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Error during restoration: {str(e)}'})
     return jsonify({'success': False, 'error': 'Invalid history index or court ID'}), 400
 
 # Route for the home page - shows all courts overview
@@ -637,13 +653,29 @@ class QueueSystem:
             state = self.history[index]
             self.queue = state['queue'].copy()
             
-            # If there's a playing team, update its start_timestamp to now
-            if self.queue and 'time' in self.queue[0]:
-                current_time = self.queue[0]['time']
-                # Calculate a timestamp that makes the remaining time correct
-                self.queue[0]['start_timestamp'] = datetime.now().timestamp() - (self.MATCH_DURATION - current_time)
+            # Update timestamps for all teams to ensure proper time calculations
+            current_time = datetime.now().timestamp()
             
+            # Special handling for the playing team (index 0)
+            if self.queue and 'time' in self.queue[0]:
+                playing_team = self.queue[0]
+                remaining_time = playing_team['time']
+                
+                # Calculate a timestamp that makes the remaining time correct
+                playing_team['start_timestamp'] = current_time - (self.MATCH_DURATION - remaining_time)
+                playing_team['server_time'] = current_time
+                
+                # Update the other teams' wait times correctly
+                for i in range(1, len(self.queue)):
+                    # Clear any old timestamps from waiting teams
+                    self.queue[i]['start_timestamp'] = None
+                    self.queue[i]['server_time'] = current_time
+            
+            # Now update all estimated wait times based on the current state
             self.update_estimated_waits()
+            
+            # Save state immediately after restore
+            self.save_state(f"Restored queue state from history")
             
             # Persist data after state changes
             court_system.save_to_mongodb()

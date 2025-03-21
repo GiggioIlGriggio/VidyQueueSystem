@@ -109,9 +109,10 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    window.location.href = `/court/{{ court_id }}?lang=${currentLang}`;
+                    // Redirect to admin dashboard after successful restoration
+                    window.location.href = `/admin/dashboard?lang=${currentLang}`;
                 } else {
-                    alert('Failed to restore queue state');
+                    alert('Failed to restore queue state: ' + (data.error || 'Unknown error'));
                 }
             })
             .catch(error => {
