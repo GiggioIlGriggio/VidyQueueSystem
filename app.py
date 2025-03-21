@@ -762,6 +762,14 @@ class QueueSystem:
         """Delete a team from the queue at the specified index."""
         if 0 <= index < len(self.queue):
             deleted_team = self.queue.pop(index)
+            
+            # Special handling when deleting the currently playing team (index 0)
+            # We need to promote the next team in the queue to be the playing team
+            if index == 0 and self.queue:
+                # Set the next team as the currently playing team
+                self.queue[0]['time'] = self.MATCH_DURATION
+                self.queue[0]['start_timestamp'] = datetime.now().timestamp()
+            
             self.update_estimated_waits()
             self.save_state(f"Deleted team: {deleted_team['name']}")
             # Force save to JSON immediately to ensure persistence

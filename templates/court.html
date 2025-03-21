@@ -145,6 +145,21 @@
                         if (data.success) {
                             // Remove the team from queueData
                             queueData.splice(teamToDelete, 1);
+                            
+                            // Special handling when the playing team (index 0) was deleted
+                            if (teamToDelete === 0 && queueData.length > 0) {
+                                // Update the next team's properties to make it the playing team
+                                const nextTeam = queueData[0];
+                                nextTeam.time = MATCH_DURATION;
+                                nextTeam.start_timestamp = Date.now() / 1000;
+                                
+                                // Update estimated wait times for all remaining teams
+                                for (let i = 1; i < queueData.length; i++) {
+                                    queueData[i].estimated_wait = MATCH_DURATION + (i - 1) * MATCH_DURATION;
+                                }
+                            }
+                            
+                            // Update the UI with the modified queue
                             updateQueueList();
                         }
                     })
